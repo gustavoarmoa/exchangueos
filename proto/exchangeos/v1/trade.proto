@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+import "exchangeos/v1/common.proto";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TradeService — bounded context: trade
+//
+// Maps to ISO 20022 fxtr.014/015/016 (Spot/Forward Trade Confirmation).
+// CLS variant: settlement via CLSBUS33. CFETS variant: capture via PTPP.
+// ─────────────────────────────────────────────────────────────────────────────
+service TradeService {
+  // Create a new FX trade (spot or forward).
+  rpc CreateTrade(CreateTradeRequest) returns (CreateTradeResponse);
+
+  // Retrieve trade by ID.
+  rpc GetTrade(GetTradeRequest) returns (GetTradeResponse);
+
+  // List trades with filters.
+  rpc ListTrades(ListTradesRequest) returns (ListTradesResponse);
+
+  // Cancel trade (only if not yet settled).
+  rpc CancelTrade(CancelTradeRequest) returns (CancelTradeResponse);
+
+  // Settle trade (transitions to SETTLED state).
+  rpc SettleTrade(SettleTradeRequest) returns (SettleTradeResponse);
+}
+
+enum TradeType {
+  TRADE_TYPE_UNSPECIFIED = 0;
+  TRADE_TYPE_SPOT = 1;
+  TRADE_TYPE_FORWARD = 2;
+  TRADE_TYPE_NDF = 3;       // Non-deliverable forward
+  TRADE_TYPE_SWAP = 4;
+}
+
+enum TradeStatus {
+  TRADE_STATUS_UNSPECIFIED = 0;
+  TRADE_STATUS_PENDING = 1;
+  TRADE_STATUS_CONFIRMED = 2;
+  TRADE_STATUS_SETTLING = 3;
+  TRADE_STATUS_SETTLED = 4;
+  TRADE_STATUS_CANCELLED = 5;
+  TRADE_STATUS_REJECTED = 6;
+}
+
+enum SettlementVenue {
+  SETTLEMENT_VENUE_UNSPECIFIED = 0;
+  SETTLEMENT_VENUE_CLS = 1;        // CLS Bank (CLSBUS33)
+  SETTLEMENT_VENUE_BILATERAL = 2;  // PvP/non-PvP bilateral
+  SETTLEMENT_VENUE_CFETS = 3;      // China FX Trade System
+}
+
+message Trade {
+  string trade_id = 1;            // UUIDv7
+  string tenant_id = 2;           // UUIDv7
+  string external_ref = 3;        // counterparty reference
+  TradeType type = 4;
+  TradeStatus status = 5;
+  SettlementVenue venue = 6;
+
+  Party buyer = 10;
+  Party seller = 11;
+
+  Money bought_amount = 20;
+  Money sold_amount = 21;
+  FxRate deal_rate = 22;
+
+  google.protobuf.Timestamp trade_date = 30;
+  google.protobuf.Timestamp value_date = 31;     // settlement date
+  google.protobuf.Timestamp confirmed_at = 32;
+  google.protobuf.Timestamp settled_at = 33;
+
+  string iso20022_message_id = 40;  // ref to fxtr.014/015 envelope
+  string cls_cycle_id = 41;         // ref to CLS daily cycle (if venue=CLS)
+
+  AuditEnvelope audit = 90;
+}
+
+message CreateTradeRequest {
+  TenantContext tenant = 1;
+  Trade trade = 2;
+}
+
+message CreateTradeResponse {
+  Trade trade = 1;
+}
+
+message GetTradeRequest {
+  TenantContext tenant = 1;
+  string trade_id = 2;
+}
+
+message GetTradeResponse {
+  Trade trade = 1;
+}
+
+message ListTradesRequest {
+  TenantContext tenant = 1;
+  PageRequest page = 2;
+  TradeStatus status_filter = 3;
+  SettlementVenue venue_filter = 4;
+  google.protobuf.Timestamp from = 5;
+  google.protobuf.Timestamp to = 6;
+}
+
+message ListTradesResponse {
+  repeated Trade trades = 1;
+  PageResponse page = 2;
+}
+
+message CancelTradeRequest {
+  TenantContext tenant = 1;
+  string trade_id = 2;
+  string reason = 3;
+}
+
+message CancelTradeResponse {
+  Trade trade = 1;
+}
+
+message SettleTradeRequest {
+  TenantContext tenant = 1;
+  string trade_id = 2;
+  google.protobuf.Timestamp settled_at = 3;
+  string settlement_ref = 4;
+}
+
+message SettleTradeResponse {
+  Trade trade = 1;
+}

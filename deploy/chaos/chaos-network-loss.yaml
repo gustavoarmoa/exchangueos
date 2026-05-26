@@ -1,0 +1,42 @@
+# CHAOS-05 — Packet loss (10%) between api/worker and Kafka.
+#
+# Chaos Mesh NetworkChaos with action=loss. Validates that the outbox publisher
+# retries succeed without producing duplicate publishes (idempotent producer
+# config: enable.idempotence=true, acks=all).
+#
+# Hypothesis: under 10% packet loss for 5 minutes:
+#   - outbox_failed_total stays below 0.1% of dispatched records
+#   - no consumer (downstream LedgerOS) sees duplicates (verify via
+#     `kafka-console-consumer | grep <correlation_id> | sort | uniq -c`)
+#   - publish_success_rate eventually returns to baseline within 30s of chaos end
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: exchangeos-kafka-loss
+  namespace: exchangeos
+  labels:
+    module: exchangeos
+    env: staging
+    bc: shared
+    tier: runtime
+spec:
+  action: loss
+  mode: all
+  selector:
+    namespaces:
+      - exchangeos
+    labelSelectors:
+      'app.kubernetes.io/name': 'exchangeos-worker'
+  loss:
+    loss: '10'
+    correlation: '25'
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces:
+        - kafka
+      labelSelectors:
+        'app': 'kafka'
+  duration: '5m'

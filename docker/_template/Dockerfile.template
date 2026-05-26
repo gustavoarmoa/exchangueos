@@ -1,0 +1,38 @@
+# Template for the remaining 6 binaries. Copy to docker/<service>/Dockerfile
+# and replace BINARY_NAME + ENTRYPOINT below.
+#
+# Used by: exchangeos-worker, -migrator, -cls-cycle, -eod, -mq-bridge, -cred-rotator.
+
+ARG GO_VERSION=1.25.1
+ARG DISTROLESS_TAG=nonroot
+
+FROM golang:${GO_VERSION}-bookworm AS builder
+WORKDIR /src
+COPY go.mod go.sum* ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
+COPY . .
+
+ARG TARGETOS=linux
+ARG TARGETARCH
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILD_DATE
+ARG BINARY_NAME=worker
+
+ENV CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH}
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -trimpath \
+      -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildDate=${BUILD_DATE}" \
+      -o /out/exchangeos-${BINARY_NAME} \
+      ./cmd/${BINARY_NAME}
+
+FROM gcr.io/distroless/static-debian12:${DISTROLESS_TAG}
+ARG BINARY_NAME=worker
+WORKDIR /app
+COPY --from=builder /out/exchangeos-${BINARY_NAME} /app/exchangeos-bin
+USER nonroot:nonroot
+ENTRYPOINT ["/app/exchangeos-bin"]

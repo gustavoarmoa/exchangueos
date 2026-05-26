@@ -1,0 +1,81 @@
+# ArgoCD Application for ExchangeOS — GitOps source of truth.
+#
+# The cluster pulls this manifest; ArgoCD reconciles the live state with the
+# Helm chart at deploy/helm/exchangeos using values-production.yaml.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: exchangeos
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: revenu-platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: revenu-platform
+  source:
+    repoURL: https://github.com/revenu-tech/exchangeos
+    targetRevision: main
+    path: deploy/helm/exchangeos
+    helm:
+      releaseName: exchangeos
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: exchangeos
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - PrunePropagationPolicy=foreground
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+  # Health gate: ArgoCD treats the application as degraded until all 7 binaries
+  # are Healthy AND the Argo Rollouts canary completes (or auto-rolls back).
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas   # managed by HPA
+---
+# AppProject — RBAC + source/destination whitelist for the revenu-platform tenant.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: revenu-platform
+  namespace: argocd
+spec:
+  description: Revenu Platform applications (ExchangeOS + sibling modules)
+  sourceRepos:
+    - https://github.com/revenu-tech/*
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: 'exchangeos*'
+    - server: https://kubernetes.default.svc
+      namespace: 'observability'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceBlacklist:
+    - group: ''
+      kind: ResourceQuota
+    - group: ''
+      kind: LimitRange
+  roles:
+    - name: deployer
+      policies:
+        - p, proj:revenu-platform:deployer, applications, sync, revenu-platform/*, allow
+      groups:
+        - revenu-platform:platform-team

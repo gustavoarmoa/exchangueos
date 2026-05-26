@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+import "exchangeos/v1/common.proto";
+
+// ComplianceService — BACEN regulatory reporting + PLD/FT + IOF.
+// Covers: Lei 14.286/2021 + Resolucoes BCB 277-561 + Circular 3.978 + Circular 3.690 (95 codigos) + Decreto IOF 12.499.
+service ComplianceService {
+  rpc ClassifyOperation(ClassifyOperationRequest) returns (ClassifyOperationResponse);
+  rpc ComputeIOF(ComputeIOFRequest) returns (ComputeIOFResponse);
+  rpc SubmitBACENReport(SubmitBACENReportRequest) returns (SubmitBACENReportResponse);
+  rpc ScreenCounterparty(ScreenCounterpartyRequest) returns (ScreenCounterpartyResponse);
+}
+
+message OperationClassification {
+  string classification_id = 1;
+  string trade_id = 2;
+  string code = 3;          // 1 of 95 BACEN codes (Circular 3.690)
+  string description = 4;
+  string nature = 5;        // remessa | ingresso | conversao
+  AuditEnvelope audit = 90;
+}
+
+message IOFComputation {
+  string iof_id = 1;
+  string trade_id = 2;
+  Money iof_amount = 3;
+  string rate_applied = 4;  // decimal string per Decreto 12.499/2025
+  string operation_type = 5;
+  AuditEnvelope audit = 90;
+}
+
+message BACENReport {
+  string report_id = 1;
+  string tenant_id = 2;
+  string report_type = 3;   // SISBACEN | BCB-CCS | BCB-CAMBIO
+  google.protobuf.Timestamp reference_date = 4;
+  bytes payload = 5;
+  string status = 6;        // PENDING | SUBMITTED | ACCEPTED | REJECTED
+  AuditEnvelope audit = 90;
+}
+
+message ScreeningResult {
+  bool clear = 1;
+  repeated string hits = 2;  // OFAC, UN, EU, COAF
+  string risk_level = 3;     // LOW | MEDIUM | HIGH
+  google.protobuf.Timestamp screened_at = 4;
+}
+
+message ClassifyOperationRequest {
+  TenantContext tenant = 1;
+  string trade_id = 2;
+}
+message ClassifyOperationResponse {
+  OperationClassification classification = 1;
+}
+
+message ComputeIOFRequest {
+  TenantContext tenant = 1;
+  string trade_id = 2;
+}
+message ComputeIOFResponse {
+  IOFComputation iof = 1;
+}
+
+message SubmitBACENReportRequest {
+  TenantContext tenant = 1;
+  BACENReport report = 2;
+}
+message SubmitBACENReportResponse {
+  BACENReport report = 1;
+}
+
+message ScreenCounterpartyRequest {
+  TenantContext tenant = 1;
+  string counterparty_bic = 2;
+  string lei = 3;
+}
+message ScreenCounterpartyResponse {
+  ScreeningResult result = 1;
+}

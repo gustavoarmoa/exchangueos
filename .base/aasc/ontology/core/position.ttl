@@ -1,0 +1,30 @@
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix exos:   <http://exchangeos.revenu.tech/ontology/position#> .
+@prefix exost:  <http://exchangeos.revenu.tech/ontology/trade#> .
+
+<http://exchangeos.revenu.tech/ontology/position>
+    a owl:Ontology ;
+    owl:versionIRI <http://exchangeos.revenu.tech/ontology/position/1.2.0> ;
+    owl:versionInfo "1.2.0" ;
+    dct:title "ExchangeOS Position Ontology"@en, "Ontologia de Posição"@pt .
+
+exos:Position a owl:Class ;
+    rdfs:label "Position"@en, "Posição"@pt ;
+    rdfs:comment "Per-tenant per-currency net open position."@en .
+
+exos:longAmount  a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+exos:shortAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+exos:netAmount   a owl:DatatypeProperty ; rdfs:range xsd:decimal ;
+    rdfs:comment "Signed: long - short."@en .
+
+exos:isLong  a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+exos:isShort a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+exos:isFlat  a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+
+exos:affectedBy a owl:ObjectProperty ;
+    rdfs:domain exos:Position ;
+    rdfs:range  exost:FXTrade ;
+    rdfs:label "affected by trade"@en .

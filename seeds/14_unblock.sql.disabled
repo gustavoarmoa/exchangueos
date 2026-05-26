@@ -1,0 +1,99 @@
+-- ExchangeOS seeds — 14: unblock — promote all rows in failed/rejected/expired/pending
+-- states to their terminal healthy state (ACTIVE / CLOSED / CONFIRMED / ACCEPTED /
+-- COMPLETED / APPLIED). Keeps the audit trail visible while showing the happy path.
+--
+-- Idempotent — running twice is a no-op (each UPDATE is conditional on the
+-- non-terminal status it's transitioning from).
+
+BEGIN;
+
+-- ─── tenants: SUSPENDED → ACTIVE ──────────────────────────────────────────
+UPDATE tenants
+   SET status     = 'ACTIVE',
+       updated_at = current_timestamp()
+ WHERE status = 'SUSPENDED';
+
+-- ─── trade_amendments: PROPOSED + REJECTED → APPLIED ──────────────────────
+-- For PROPOSED (no approver yet): pick system actor as approver, fill approval timestamps.
+UPDATE trade_amendments
+   SET status            = 'APPLIED',
+       approver_actor_id = '11111111-0000-5000-8000-000000000003',
+       approved_at       = proposed_at + INTERVAL '5 minutes',
+       applied_at        = proposed_at + INTERVAL '6 minutes'
+ WHERE status = 'PROPOSED';
+
+-- For REJECTED: flip to APPLIED with backdated approval (audit shows what would have happened).
+UPDATE trade_amendments
+   SET status      = 'APPLIED',
+       approved_at = COALESCE(approved_at, proposed_at + INTERVAL '5 minutes'),
+       applied_at  = proposed_at + INTERVAL '6 minutes'
+ WHERE status = 'REJECTED';
+
+-- For APPROVED-but-not-yet-applied: complete the lifecycle by filling applied_at.
+UPDATE trade_amendments
+   SET status     = 'APPLIED',
+       applied_at = COALESCE(applied_at, approved_at + INTERVAL '1 minute')
+ WHERE status = 'APPROVED';
+
+-- ─── bacen_reports: REJECTED + PENDING + SUBMITTED → ACCEPTED ─────────────
+UPDATE bacen_reports
+   SET status           = 'ACCEPTED',
+       submitted_at     = COALESCE(submitted_at, created_at + INTERVAL '10 minutes'),
+       responded_at     = COALESCE(responded_at, created_at + INTERVAL '15 minutes'),
+       rejection_reason = NULL,
+       version          = version + 1,
+       updated_at       = current_timestamp()
+ WHERE status IN ('PENDING','SUBMITTED','REJECTED');
+
+-- ─── cls_cycles: FAILED + OPEN + PAY_IN_WINDOW + SETTLING → CLOSED ────────
+UPDATE cls_cycles
+   SET status         = 'CLOSED',
+       closed_at      = COALESCE(closed_at, scheduled_close + INTERVAL '30 seconds'),
+       failure_reason = NULL,
+       version        = version + 1,
+       updated_at     = current_timestamp()
+ WHERE status IN ('FAILED','OPEN','PAY_IN_WINDOW','SETTLING');
+
+-- ─── payin_instructions: FAILED + PENDING + SUBMITTED → CONFIRMED ─────────
+UPDATE payin_instructions
+   SET status         = 'CONFIRMED',
+       submitted_at   = COALESCE(submitted_at, deadline - INTERVAL '5 minutes'),
+       confirmed_at   = COALESCE(confirmed_at, deadline - INTERVAL '4 minutes'),
+       failure_reason = NULL,
+       version        = version + 1,
+       updated_at     = current_timestamp()
+ WHERE status IN ('PENDING','SUBMITTED','FAILED');
+
+-- ─── rfqs: EXPIRED + REJECTED + REQUESTED + QUOTED → ACCEPTED ─────────────
+UPDATE rfqs
+   SET status     = 'ACCEPTED',
+       version    = version + 1,
+       updated_at = current_timestamp()
+ WHERE status IN ('REQUESTED','QUOTED','EXPIRED','REJECTED');
+
+-- ─── eod_jobs: FAILED + PENDING + RUNNING → COMPLETED ─────────────────────
+UPDATE eod_jobs
+   SET status         = 'COMPLETED',
+       started_at     = COALESCE(started_at, created_at),
+       completed_at   = COALESCE(completed_at, created_at + INTERVAL '35 minutes'),
+       failure_reason = NULL,
+       steps_done     = ARRAY['PTAX','MTM','POSITION_SNAPSHOT','BACEN_REPORT'],
+       version        = version + 1,
+       updated_at     = current_timestamp()
+ WHERE status IN ('PENDING','RUNNING','FAILED');
+
+-- ─── screening_results: HIGH + MEDIUM → LOW (clear all hits) ──────────────
+-- Lifts the CFETS HIGH-risk + HSBC MEDIUM-risk fixtures back to LOW so
+-- compliance gating no longer holds back any transactions.
+UPDATE screening_results
+   SET risk_level = 'LOW',
+       hits       = ARRAY[]::STRING[]
+ WHERE risk_level IN ('MEDIUM','HIGH');
+
+-- ─── outbox_events: re-drain failed-pending if any (no-op when worker healthy) ─
+UPDATE outbox_events
+   SET dispatched_at = COALESCE(dispatched_at, current_timestamp()),
+       last_error    = NULL
+ WHERE dispatched_at IS NULL AND attempt_count > 0;
+
+COMMIT;

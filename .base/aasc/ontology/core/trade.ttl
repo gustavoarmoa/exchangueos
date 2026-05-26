@@ -1,0 +1,123 @@
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix fibo-fbc-fct-fse: <https://spec.edmcouncil.org/fibo/ontology/FBC/FunctionalEntities/FinancialServicesEntities/> .
+@prefix fibo-fbc-fi-fi:    <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/> .
+@prefix exos:   <http://exchangeos.revenu.tech/ontology/trade#> .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ExchangeOS Trade Ontology
+# OWL 2 DL profile. Aligned with FIBO via skos:closeMatch.
+# Version: 1.2.0   (matches .base/aasc/ontology/CHANGELOG.md)
+# ─────────────────────────────────────────────────────────────────────────────
+
+<http://exchangeos.revenu.tech/ontology/trade>
+    a owl:Ontology ;
+    owl:versionIRI <http://exchangeos.revenu.tech/ontology/trade/1.2.0> ;
+    owl:versionInfo "1.2.0" ;
+    dct:title "ExchangeOS Trade Ontology"@en, "Ontologia de Negociação ExchangeOS"@pt ;
+    dct:description
+        "Ontology covering the FX trade bounded context: aggregates, lifecycle states, and economics. Aligned with ISO 20022 fxtr and FIBO FinancialInstruments."@en ;
+    owl:imports <http://ledgeros.revenu.tech/ontology/finance/1.2.0> .
+
+# ─── Classes ────────────────────────────────────────────────────────────────
+
+exos:FXTrade a owl:Class ;
+    rdfs:label "FX Trade"@en, "Operação Cambial"@pt ;
+    rdfs:comment "A foreign exchange trade between two counterparties for the exchange of currencies on a settlement date."@en ;
+    skos:closeMatch fibo-fbc-fi-fi:FinancialInstrument .
+
+exos:Spot a owl:Class ;
+    rdfs:label "Spot Trade"@en, "Operação à Vista"@pt ;
+    rdfs:subClassOf exos:FXTrade ;
+    rdfs:comment "FX trade settling on T+2 (industry default; USDCAD/USDMXN settle T+1)."@en .
+
+exos:Forward a owl:Class ;
+    rdfs:label "Forward Trade"@en, "Operação a Termo"@pt ;
+    rdfs:subClassOf exos:FXTrade .
+
+exos:NDF a owl:Class ;
+    rdfs:label "Non-Deliverable Forward"@en, "Termo Não Entregável"@pt ;
+    rdfs:subClassOf exos:Forward ;
+    rdfs:comment "Cash-settled (USD) forward typically used for currencies with capital controls (BRL/CNY/INR/KRW)."@en .
+
+exos:Swap a owl:Class ;
+    rdfs:label "FX Swap"@en ;
+    rdfs:subClassOf exos:FXTrade .
+
+exos:Counterparty a owl:Class ;
+    rdfs:label "Counterparty"@en, "Contraparte"@pt ;
+    skos:closeMatch fibo-fbc-fct-fse:FinancialServiceProvider .
+
+# ─── Lifecycle states ───────────────────────────────────────────────────────
+
+exos:TradeStatus a owl:Class ;
+    rdfs:label "Trade Status"@en .
+
+exos:Pending    a exos:TradeStatus ; rdfs:label "PENDING"@en .
+exos:Confirmed  a exos:TradeStatus ; rdfs:label "CONFIRMED"@en .
+exos:Settling   a exos:TradeStatus ; rdfs:label "SETTLING"@en .
+exos:Settled    a exos:TradeStatus ; rdfs:label "SETTLED"@en .
+exos:Cancelled  a exos:TradeStatus ; rdfs:label "CANCELLED"@en .
+exos:Rejected   a exos:TradeStatus ; rdfs:label "REJECTED"@en .
+
+# ─── Settlement venue ───────────────────────────────────────────────────────
+
+exos:SettlementVenue a owl:Class ;
+    rdfs:label "Settlement Venue"@en .
+
+exos:CLS        a exos:SettlementVenue ; rdfs:label "CLS Bank"@en .
+exos:Bilateral  a exos:SettlementVenue ; rdfs:label "Bilateral"@en .
+exos:CFETS      a exos:SettlementVenue ; rdfs:label "CFETS"@en .
+
+# ─── Object properties ─────────────────────────────────────────────────────
+
+exos:hasBuyer a owl:ObjectProperty ;
+    rdfs:domain exos:FXTrade ;
+    rdfs:range  exos:Counterparty ;
+    rdfs:label  "has buyer"@en .
+
+exos:hasSeller a owl:ObjectProperty ;
+    rdfs:domain exos:FXTrade ;
+    rdfs:range  exos:Counterparty ;
+    rdfs:label  "has seller"@en .
+
+exos:hasStatus a owl:ObjectProperty ;
+    rdfs:domain exos:FXTrade ;
+    rdfs:range  exos:TradeStatus ;
+    rdfs:label  "has status"@en .
+
+exos:hasVenue a owl:ObjectProperty ;
+    rdfs:domain exos:FXTrade ;
+    rdfs:range  exos:SettlementVenue ;
+    rdfs:label  "has settlement venue"@en .
+
+# ─── Datatype properties ───────────────────────────────────────────────────
+
+exos:dealRate a owl:DatatypeProperty ;
+    rdfs:domain exos:FXTrade ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "deal rate"@en, "taxa de fechamento"@pt .
+
+exos:boughtAmount a owl:DatatypeProperty ;
+    rdfs:domain exos:FXTrade ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "bought amount"@en .
+
+exos:soldAmount a owl:DatatypeProperty ;
+    rdfs:domain exos:FXTrade ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "sold amount"@en .
+
+exos:tradeDate a owl:DatatypeProperty ;
+    rdfs:domain exos:FXTrade ;
+    rdfs:range  xsd:dateTime ;
+    rdfs:label  "trade date"@en .
+
+exos:valueDate a owl:DatatypeProperty ;
+    rdfs:domain exos:FXTrade ;
+    rdfs:range  xsd:date ;
+    rdfs:label  "value date"@en .

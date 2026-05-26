@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+import "exchangeos/v1/common.proto";
+
+// RefDataService — currencies, calendars, BICs, SSIs.
+// Maps to ISO 20022 reda.060/061 (CLS settlement instructions).
+service RefDataService {
+  rpc ListCurrencies(ListCurrenciesRequest) returns (ListCurrenciesResponse);
+  rpc GetCalendar(GetCalendarRequest) returns (GetCalendarResponse);
+  rpc ResolveBIC(ResolveBICRequest) returns (ResolveBICResponse);
+  rpc GetSSI(GetSSIRequest) returns (GetSSIResponse);
+}
+
+message Currency {
+  string code = 1;          // ISO 4217 alpha-3
+  string name = 2;
+  int32 minor_units = 3;    // decimal places (0, 2, 3)
+  bool cls_eligible = 4;    // one of 18 CLS-eligible CCYs
+  bool cfets_eligible = 5;
+}
+
+message Calendar {
+  string calendar_id = 1;    // e.g. "USD_NYC", "EUR_TARGET2", "BRL_BRASILIA"
+  repeated google.protobuf.Timestamp holidays = 2;
+}
+
+message BICRecord {
+  string bic = 1;
+  string institution_name = 2;
+  string country = 3;
+  string lei = 4;
+  bool active = 5;
+}
+
+message SSI {
+  string ssi_id = 1;
+  string tenant_id = 2;
+  string currency = 3;
+  string beneficiary_bic = 4;
+  string intermediary_bic = 5;
+  string account_number = 6;
+  string iban = 7;
+  google.protobuf.Timestamp valid_from = 8;
+  google.protobuf.Timestamp valid_to = 9;
+}
+
+message ListCurrenciesRequest { PageRequest page = 1; }
+message ListCurrenciesResponse {
+  repeated Currency currencies = 1;
+  PageResponse page = 2;
+}
+
+message GetCalendarRequest { string calendar_id = 1; }
+message GetCalendarResponse { Calendar calendar = 1; }
+
+message ResolveBICRequest { string bic = 1; }
+message ResolveBICResponse { BICRecord bic_record = 1; }
+
+message GetSSIRequest {
+  TenantContext tenant = 1;
+  string currency = 2;
+  string counterparty_bic = 3;
+  google.protobuf.Timestamp at_time = 4;  // optional; defaults to now if zero
+}
+message GetSSIResponse { SSI ssi = 1; }

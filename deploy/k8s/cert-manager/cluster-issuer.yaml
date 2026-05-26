@@ -1,0 +1,66 @@
+# cert-manager ClusterIssuer for ExchangeOS — Let's Encrypt production + DNS-01 via GCP CloudDNS.
+#
+# Prereqs:
+#   1. cert-manager installed in cluster (helm.cert-manager.io/cert-manager).
+#   2. GCP service account with `roles/dns.admin` on the public zone.
+#   3. Workload Identity bound to cert-manager controller SA via the same WIF pattern.
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    app.kubernetes.io/part-of: revenu-platform
+    app.kubernetes.io/managed-by: argocd
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: tech@revenu.com.br
+    privateKeySecretRef:
+      name: letsencrypt-prod-account
+    solvers:
+      # DNS-01 via GCP CloudDNS — works for wildcard certs.
+      - dns01:
+          cloudDNS:
+            project: revenu-platform-prod
+            hostedZoneName: revenu-tech
+      # HTTP-01 fallback for non-wildcard subdomains.
+      - http01:
+          ingress:
+            class: gce
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    app.kubernetes.io/part-of: revenu-platform
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: tech@revenu.com.br
+    privateKeySecretRef:
+      name: letsencrypt-staging-account
+    solvers:
+      - dns01:
+          cloudDNS:
+            project: revenu-platform-prod
+            hostedZoneName: revenu-tech
+---
+# Example Certificate for the public API endpoint.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: exchangeos-api-tls
+  namespace: exchangeos
+spec:
+  secretName: exchangeos-api-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: api.exchangeos.revenu.tech
+  dnsNames:
+    - api.exchangeos.revenu.tech
+    - grpc.exchangeos.revenu.tech
+  duration: 2160h   # 90 days
+  renewBefore: 720h # 30 days

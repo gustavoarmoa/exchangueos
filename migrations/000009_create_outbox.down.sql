@@ -1,0 +1,4 @@
+BEGIN;
+DROP TABLE IF EXISTS outbox_dispatched_archive CASCADE;
+DROP TABLE IF EXISTS outbox_events CASCADE;
+COMMIT;

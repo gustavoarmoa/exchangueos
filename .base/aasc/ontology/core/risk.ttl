@@ -1,0 +1,29 @@
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix exos:   <http://exchangeos.revenu.tech/ontology/risk#> .
+
+<http://exchangeos.revenu.tech/ontology/risk>
+    a owl:Ontology ;
+    owl:versionIRI <http://exchangeos.revenu.tech/ontology/risk/1.2.0> ;
+    owl:versionInfo "1.2.0" ;
+    dct:title "ExchangeOS Risk Ontology"@en, "Ontologia de Risco"@pt ;
+    dct:description "Trading limits + breach detection. Cite RN_FX_015."@en .
+
+exos:Limit a owl:Class ;
+    rdfs:label "Trading Limit"@en .
+
+exos:LimitType a owl:Class .
+exos:Counterparty a exos:LimitType ; rdfs:label "COUNTERPARTY"@en .
+exos:Currency     a exos:LimitType ; rdfs:label "CURRENCY"@en .
+exos:Tenor        a exos:LimitType ; rdfs:label "TENOR"@en .
+exos:DV01         a exos:LimitType ; rdfs:label "DV01"@en .
+exos:VaR          a exos:LimitType ; rdfs:label "VAR"@en .
+
+exos:cap      a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+exos:utilised a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+
+exos:isBreached a owl:DatatypeProperty ;
+    rdfs:domain exos:Limit ; rdfs:range xsd:boolean ;
+    rdfs:comment "True when utilised >= cap."@en .

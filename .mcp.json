@@ -1,0 +1,49 @@
+{
+  "$schema": "https://docs.claude.com/schema/mcp-config.json",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/guga/projects/revenu-tech/revenu-platform/exchangeos"
+      ],
+      "description": "Scoped filesystem access para ExchangeOS root"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub API integration (PRs, issues, workflows)"
+    },
+    "postgres-crdb": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${DATABASE_URL}"
+      ],
+      "description": "CockroachDB queries (read-only) — usa shared hub TLS"
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "description": "Estruturacao step-by-step de raciocinio complexo para sagas multi-modulo"
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "description": "Fetch URLs (BACEN OLINDA API, iso20022.org, etc)"
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {
+        "MEMORY_FILE_PATH": "/Users/guga/projects/revenu-tech/revenu-platform/exchangeos/.claude/memory/mcp-memory.json"
+      },
+      "description": "Knowledge graph persistente entre sessoes"
+    }
+  }
+}

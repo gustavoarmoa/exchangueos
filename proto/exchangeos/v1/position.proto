@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+import "exchangeos/v1/common.proto";
+
+// PositionService — net position keeping per currency + counterparty.
+service PositionService {
+  rpc GetPosition(GetPositionRequest) returns (GetPositionResponse);
+  rpc ListPositions(ListPositionsRequest) returns (ListPositionsResponse);
+  rpc RecomputePositions(RecomputePositionsRequest) returns (RecomputePositionsResponse);
+}
+
+message Position {
+  string position_id = 1;
+  string tenant_id = 2;
+  string currency = 3;
+  Money long_amount = 4;
+  Money short_amount = 5;
+  Money net_amount = 6;
+  google.protobuf.Timestamp as_of = 7;
+  AuditEnvelope audit = 90;
+}
+
+message GetPositionRequest {
+  TenantContext tenant = 1;
+  string currency = 2;
+}
+
+message GetPositionResponse {
+  Position position = 1;
+}
+
+message ListPositionsRequest {
+  TenantContext tenant = 1;
+  PageRequest page = 2;
+}
+
+message ListPositionsResponse {
+  repeated Position positions = 1;
+  PageResponse page = 2;
+}
+
+message RecomputePositionsRequest {
+  TenantContext tenant = 1;
+  google.protobuf.Timestamp business_date = 2;
+}
+
+message RecomputePositionsResponse {
+  int32 positions_updated = 1;
+  google.protobuf.Timestamp completed_at = 2;
+}

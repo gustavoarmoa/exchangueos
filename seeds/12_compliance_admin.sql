@@ -1,0 +1,121 @@
+-- ExchangeOS seeds — 12: compliance + admin tables.
+-- 5 classifications (BACEN nature codes) + 5 iof_computations + 5 bacen_reports
+-- + 5 screening_results + 5 system_events + 5 eod_jobs.
+
+BEGIN;
+
+-- ─── 5 classifications (one per fx_trades from seed 08) ────────────────────
+INSERT INTO classifications (classification_id, tenant_id, trade_id, code, description, nature) VALUES
+    ('eeeeeeee-0000-5000-8000-000000000001', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000001', '10000', 'Exportação de mercadorias', 'INGRESSO'),
+
+    ('eeeeeeee-0000-5000-8000-000000000002', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000002', '20000', 'Investimento estrangeiro direto - ingresso', 'INGRESSO'),
+
+    ('eeeeeeee-0000-5000-8000-000000000003', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000003', '70001', 'Operações com derivativos - Forward', 'CONVERSAO'),
+
+    ('eeeeeeee-0000-5000-8000-000000000004', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000004', '70002', 'Operações com derivativos - Swap', 'CONVERSAO'),
+
+    ('eeeeeeee-0000-5000-8000-000000000005', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000005', '70002', 'Operações com derivativos - Swap', 'CONVERSAO')
+ON CONFLICT (classification_id) DO NOTHING;
+
+-- ─── 5 iof_computations ────────────────────────────────────────────────────
+INSERT INTO iof_computations (iof_id, tenant_id, trade_id, operation_type, notional, notional_ccy, rate, iof_amount) VALUES
+    ('ffffffff-0000-5000-8000-000000000001', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000001', 'EXPORT',
+     1000000.000000000000000000, 'EUR', 0.000000000000000000, 0.000000000000000000),
+
+    ('ffffffff-0000-5000-8000-000000000002', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000002', 'DEFAULT',
+     500000.000000000000000000, 'USD', 0.003800000000000000, 1900.000000000000000000),
+
+    ('ffffffff-0000-5000-8000-000000000003', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000003', 'DEFAULT',
+     750000.000000000000000000, 'GBP', 0.003800000000000000, 2850.000000000000000000),
+
+    ('ffffffff-0000-5000-8000-000000000004', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000004', 'DEFAULT',
+     2000000.000000000000000000, 'USD', 0.003800000000000000, 7600.000000000000000000),
+
+    ('ffffffff-0000-5000-8000-000000000005', '00000000-0000-5000-8000-000000000001',
+     '33333333-0000-5000-8000-000000000005', 'DEFAULT',
+     2000000.000000000000000000, 'USD', 0.003800000000000000, 7600.000000000000000000)
+ON CONFLICT (iof_id) DO NOTHING;
+
+-- ─── 5 bacen_reports ───────────────────────────────────────────────────────
+INSERT INTO bacen_reports (report_id, tenant_id, report_type, reference_date, payload_hash, status, submitted_at, responded_at, rejection_reason, version) VALUES
+    ('12121212-0000-5000-8000-000000000001', '00000000-0000-5000-8000-000000000001',
+     'SISBACEN', '2026-05-22', 'sha256:a1b2c3d4e5f6...', 'ACCEPTED',
+     '2026-05-22T18:00:00Z', '2026-05-22T18:05:00Z', NULL, 3),
+
+    ('12121212-0000-5000-8000-000000000002', '00000000-0000-5000-8000-000000000001',
+     'BCB-CAMBIO', '2026-05-22', 'sha256:f1e2d3c4b5a6...', 'ACCEPTED',
+     '2026-05-22T18:10:00Z', '2026-05-22T18:14:00Z', NULL, 3),
+
+    ('12121212-0000-5000-8000-000000000003', '00000000-0000-5000-8000-000000000001',
+     'SISBACEN', '2026-05-23', '1234567890abcdef',     'SUBMITTED',
+     '2026-05-23T18:00:00Z', NULL, NULL, 2),
+
+    ('12121212-0000-5000-8000-000000000004', '00000000-0000-5000-8000-000000000001',
+     'BCB-CCS', '2026-05-25', 'fedcba0987654321',     'PENDING',
+     NULL, NULL, NULL, 1),
+
+    ('12121212-0000-5000-8000-000000000005', '00000000-0000-5000-8000-000000000001',
+     'BCB-CAMBIO', '2026-05-18', 'badbadbadbadbad',   'REJECTED',
+     '2026-05-18T18:00:00Z', '2026-05-18T18:30:00Z', 'invalid nature code 99999', 4)
+ON CONFLICT (report_id) DO NOTHING;
+
+-- ─── 5 screening_results ───────────────────────────────────────────────────
+INSERT INTO screening_results (screening_id, tenant_id, counterparty_bic, lei, risk_level, hits, screened_at) VALUES
+    ('13131313-0000-5000-8000-000000000001', '00000000-0000-5000-8000-000000000001',
+     'DEUTDEFF', '7LTWFZYICNSX8D621K86', 'LOW',  ARRAY[]::STRING[],                       '2026-05-25T08:00:00Z'),
+
+    ('13131313-0000-5000-8000-000000000002', '00000000-0000-5000-8000-000000000001',
+     'CHASUS33', '7H6GLXDRUGQFU57RNE97', 'LOW',  ARRAY[]::STRING[],                       '2026-05-25T08:05:00Z'),
+
+    ('13131313-0000-5000-8000-000000000003', '00000000-0000-5000-8000-000000000001',
+     'HSBCGB2L', 'MP6I5ZYZBEU3UXPYFY54', 'MEDIUM', ARRAY['EU-PEP-soft'],                 '2026-05-25T08:10:00Z'),
+
+    ('13131313-0000-5000-8000-000000000004', '00000000-0000-5000-8000-000000000001',
+     'BCBRBRDF', '8CK5K8X8M2DJ4ER4N123', 'LOW',  ARRAY[]::STRING[],                       '2026-05-25T08:15:00Z'),
+
+    ('13131313-0000-5000-8000-000000000005', '00000000-0000-5000-8000-000000000001',
+     'CFETCNSH', '5493002Q6N5J3D6FUH26', 'HIGH', ARRAY['OFAC-watch','UN-1267-name-similar'], '2026-05-25T08:20:00Z')
+ON CONFLICT (screening_id) DO NOTHING;
+
+-- ─── 5 system_events ───────────────────────────────────────────────────────
+INSERT INTO system_events (event_id, code, component, description, at, iso20022_ref) VALUES
+    ('14141414-0000-5000-8000-000000000001', 'CYCLE_OPEN',       'exchangeos-cls-cycle', 'CLS cycle 2026-05-26 opened',           '2026-05-26T05:00:00Z', 'admi.002.001'),
+    ('14141414-0000-5000-8000-000000000002', 'PAY_IN_WINDOW',    'exchangeos-cls-cycle', 'PIN1 window opened for cycle 2026-05-26', '2026-05-26T06:00:00Z', 'admi.004.001'),
+    ('14141414-0000-5000-8000-000000000003', 'EOD_STARTED',      'exchangeos-eod',       'EOD batch started for 2026-05-25',      '2026-05-25T22:00:00Z', NULL),
+    ('14141414-0000-5000-8000-000000000004', 'EOD_COMPLETED',    'exchangeos-eod',       'EOD batch completed for 2026-05-25',    '2026-05-25T22:35:00Z', NULL),
+    ('14141414-0000-5000-8000-000000000005', 'CYCLE_CLOSE',      'exchangeos-cls-cycle', 'CLS cycle 2026-05-23 closed nominal',   '2026-05-23T10:00:30Z', 'admi.011.001')
+ON CONFLICT (event_id) DO NOTHING;
+
+-- ─── 5 eod_jobs ────────────────────────────────────────────────────────────
+INSERT INTO eod_jobs (job_id, tenant_id, business_date, status, started_at, completed_at, failure_reason, steps_done, version) VALUES
+    ('15151515-0000-5000-8000-000000000001', '00000000-0000-5000-8000-000000000001', '2026-05-22', 'COMPLETED',
+     '2026-05-22T22:00:00Z', '2026-05-22T22:35:00Z', NULL,
+     ARRAY['PTAX','MTM','POSITION_SNAPSHOT','BACEN_REPORT'], 5),
+
+    ('15151515-0000-5000-8000-000000000002', '00000000-0000-5000-8000-000000000001', '2026-05-23', 'COMPLETED',
+     '2026-05-23T22:00:00Z', '2026-05-23T22:34:00Z', NULL,
+     ARRAY['PTAX','MTM','POSITION_SNAPSHOT','BACEN_REPORT'], 5),
+
+    ('15151515-0000-5000-8000-000000000003', '00000000-0000-5000-8000-000000000001', '2026-05-25', 'COMPLETED',
+     '2026-05-25T22:00:00Z', '2026-05-25T22:35:00Z', NULL,
+     ARRAY['PTAX','MTM','POSITION_SNAPSHOT','BACEN_REPORT'], 5),
+
+    ('15151515-0000-5000-8000-000000000004', '00000000-0000-5000-8000-000000000001', '2026-05-26', 'RUNNING',
+     '2026-05-26T22:00:00Z', NULL, NULL,
+     ARRAY['PTAX','MTM'], 3),
+
+    ('15151515-0000-5000-8000-000000000005', '00000000-0000-5000-8000-000000000001', '2026-05-18', 'FAILED',
+     '2026-05-18T22:00:00Z', '2026-05-18T22:10:00Z', 'PTAX feed unreachable',
+     ARRAY[]::STRING[], 2)
+ON CONFLICT (tenant_id, business_date) DO NOTHING;
+
+COMMIT;

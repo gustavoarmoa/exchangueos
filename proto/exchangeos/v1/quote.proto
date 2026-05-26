@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+import "exchangeos/v1/common.proto";
+
+// QuoteService — internal Revenu service (no direct ISO 20022 mapping).
+// Quote/price discovery feeds TradeService.
+service QuoteService {
+  rpc GetQuote(GetQuoteRequest) returns (GetQuoteResponse);
+  rpc StreamQuotes(StreamQuotesRequest) returns (stream Quote);
+  rpc AcceptQuote(AcceptQuoteRequest) returns (AcceptQuoteResponse);
+}
+
+message Quote {
+  string quote_id = 1;
+  string tenant_id = 2;
+  string base_ccy = 3;
+  string quote_ccy = 4;
+  Money notional = 5;
+  FxRate bid = 6;
+  FxRate ask = 7;
+  google.protobuf.Timestamp valid_from = 8;
+  google.protobuf.Timestamp valid_to = 9;
+  string venue = 10;
+  AuditEnvelope audit = 90;
+}
+
+message GetQuoteRequest {
+  TenantContext tenant = 1;
+  string base_ccy = 2;
+  string quote_ccy = 3;
+  Money notional = 4;
+}
+
+message GetQuoteResponse {
+  Quote quote = 1;
+}
+
+message StreamQuotesRequest {
+  TenantContext tenant = 1;
+  repeated string pairs = 2;
+}
+
+message AcceptQuoteRequest {
+  TenantContext tenant = 1;
+  string quote_id = 2;
+}
+
+message AcceptQuoteResponse {
+  string trade_id = 1;
+}

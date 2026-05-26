@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+import "exchangeos/v1/common.proto";
+
+// AdminService — operator/system administration endpoints.
+// Maps to ISO 20022 admi.002/004/009/010/011/017 (system event notifications).
+service AdminService {
+  rpc EmitSystemEvent(EmitSystemEventRequest) returns (EmitSystemEventResponse);
+  rpc GetServiceHealth(GetServiceHealthRequest) returns (GetServiceHealthResponse);
+  rpc TriggerEOD(TriggerEODRequest) returns (TriggerEODResponse);
+}
+
+enum SystemEventCode {
+  SYSTEM_EVENT_CODE_UNSPECIFIED = 0;
+  SYSTEM_EVENT_CODE_STARTUP = 1;
+  SYSTEM_EVENT_CODE_SHUTDOWN = 2;
+  SYSTEM_EVENT_CODE_DEGRADED = 3;
+  SYSTEM_EVENT_CODE_RECOVERED = 4;
+  SYSTEM_EVENT_CODE_CYCLE_OPEN = 10;     // CLS cycle opened
+  SYSTEM_EVENT_CODE_CYCLE_CLOSE = 11;
+  SYSTEM_EVENT_CODE_EOD_STARTED = 20;
+  SYSTEM_EVENT_CODE_EOD_COMPLETED = 21;
+}
+
+message SystemEvent {
+  string event_id = 1;
+  SystemEventCode code = 2;
+  string component = 3;
+  string description = 4;
+  google.protobuf.Timestamp at = 5;
+  string iso20022_message_id = 6;   // ref to admi.x envelope
+  AuditEnvelope audit = 90;
+}
+
+message EmitSystemEventRequest { SystemEvent event = 1; }
+message EmitSystemEventResponse { SystemEvent event = 1; }
+
+message GetServiceHealthRequest { string component = 1; }
+message GetServiceHealthResponse {
+  string status = 1;        // SERVING | NOT_SERVING | DEGRADED
+  map<string, string> details = 2;
+}
+
+message TriggerEODRequest {
+  TenantContext tenant = 1;
+  google.protobuf.Timestamp business_date = 2;
+}
+message TriggerEODResponse {
+  string job_id = 1;
+  google.protobuf.Timestamp started_at = 2;
+}

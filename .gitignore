@@ -1,0 +1,47 @@
+# Build
+bin/
+dist/
+*.test
+*.out
+coverage.*
+*.prof
+*.exe
+
+# Generated
+proto/gen/
+
+# Env / secrets — NEVER commit
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local data
+docker/compose/data/
+docker/compose/logs/
+data/
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Go cache
+.cache/
+
+# Lefthook
+lefthook-local.yml
+
+# Audit logs (gitignored — audit-bypass.log)
+.git/audit-bypass.log
+
+# Claude scratch
+.claude/cache/
+.claude/memory/local/

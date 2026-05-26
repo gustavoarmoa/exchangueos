@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+import "exchangeos/v1/common.proto";
+
+// RiskService — pre-trade limit checks + intraday exposure tracking.
+service RiskService {
+  rpc CheckLimit(CheckLimitRequest) returns (CheckLimitResponse);
+  rpc GetExposure(GetExposureRequest) returns (GetExposureResponse);
+  rpc UpdateLimit(UpdateLimitRequest) returns (UpdateLimitResponse);
+}
+
+enum LimitType {
+  LIMIT_TYPE_UNSPECIFIED = 0;
+  LIMIT_TYPE_COUNTERPARTY = 1;
+  LIMIT_TYPE_CURRENCY = 2;
+  LIMIT_TYPE_TENOR = 3;
+  LIMIT_TYPE_DV01 = 4;
+  LIMIT_TYPE_VAR = 5;
+}
+
+message Limit {
+  string limit_id = 1;
+  string tenant_id = 2;
+  LimitType type = 3;
+  string scope = 4;          // e.g. counterparty BIC or currency code
+  Money cap = 5;
+  Money utilised = 6;
+  AuditEnvelope audit = 90;
+}
+
+message CheckLimitRequest {
+  TenantContext tenant = 1;
+  string trade_id = 2;
+  Money proposed_exposure = 3;
+}
+
+message CheckLimitResponse {
+  bool allowed = 1;
+  repeated string breached_limits = 2;
+  string explanation = 3;
+}
+
+message GetExposureRequest {
+  TenantContext tenant = 1;
+  string counterparty_bic = 2;
+  string currency = 3;
+}
+
+message GetExposureResponse {
+  Money current_exposure = 1;
+  Money limit_cap = 2;
+  double utilisation_pct = 3;
+}
+
+message UpdateLimitRequest {
+  TenantContext tenant = 1;
+  Limit limit = 2;
+}
+
+message UpdateLimitResponse {
+  Limit limit = 1;
+}

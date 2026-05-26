@@ -1,0 +1,83 @@
+name: benchmarks
+
+# Tracks performance regressions across releases using benchstat.
+# Runs on push to main + on tag push for release baselines.
+# Stores baseline numbers as artifact + compares against the previous run.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+  schedule:
+    - cron: '0 5 * * 1'   # Mondays 05:00 UTC — weekly baseline refresh
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.25.1"
+
+jobs:
+  benchmark:
+    name: bench (${{ matrix.pkg }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pkg:
+          - ./pkg/pricing/...
+          - ./pkg/outbox/...
+          - ./modules/trade/domain/...
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: install benchstat
+        run: go install golang.org/x/perf/cmd/benchstat@latest
+
+      - name: run benchmarks (10 runs for statistical confidence)
+        run: |
+          mkdir -p .bench
+          go test -run='^$' -bench=. -benchmem -count=10 ${{ matrix.pkg }} \
+            > .bench/$(echo "${{ matrix.pkg }}" | tr './' '_').current.txt
+
+      - name: restore previous baseline
+        uses: actions/cache/restore@v4
+        id: cache-baseline
+        with:
+          path: .bench/*.baseline.txt
+          key: bench-baseline-${{ matrix.pkg }}-v1
+
+      - name: compare vs baseline (warn-only)
+        if: steps.cache-baseline.outputs.cache-hit == 'true'
+        run: |
+          CURRENT=.bench/$(echo "${{ matrix.pkg }}" | tr './' '_').current.txt
+          BASELINE=.bench/$(echo "${{ matrix.pkg }}" | tr './' '_').baseline.txt
+          benchstat "${BASELINE}" "${CURRENT}" | tee .bench/diff.txt
+          # Warn-only — don't fail the build on small regressions.
+          # Threshold tuning lives in docs/operations/performance-baseline.md.
+
+      - name: promote current → baseline (on success)
+        run: |
+          CURRENT=.bench/$(echo "${{ matrix.pkg }}" | tr './' '_').current.txt
+          BASELINE=.bench/$(echo "${{ matrix.pkg }}" | tr './' '_').baseline.txt
+          cp "${CURRENT}" "${BASELINE}"
+
+      - name: cache new baseline
+        uses: actions/cache/save@v4
+        with:
+          path: .bench/*.baseline.txt
+          key: bench-baseline-${{ matrix.pkg }}-v1
+
+      - name: upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks-${{ strategy.job-index }}
+          path: .bench/
+          retention-days: 30

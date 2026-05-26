@@ -1,0 +1,99 @@
+# ExchangeOS Kafka Topic Catalog
+# ─────────────────────────────────────────────────────────────────────────────
+# One topic per (bounded_context, aggregate). Names follow:
+#     exchangeos.<context>.<aggregate>.<event_class>
+#
+# Partitions: 32 default (matches Kafka recommended default for FX-throughput).
+# Retention: 30d default; PII-bearing topics shortened to 7d.
+# Compression: zstd cluster-wide.
+# Replication factor: 3 (production); 1 (local compose).
+# Min in-sync replicas: 2.
+
+defaults:
+  partitions: 32
+  replication_factor: 3
+  retention_ms: 2592000000   # 30 days
+  cleanup_policy: delete
+  compression_type: zstd
+  min_insync_replicas: 2
+
+topics:
+  # ── Trade ──────────────────────────────────────────────────────────────────
+  - name: exchangeos.trade.events
+    description: All FXTrade lifecycle events (trade.created/confirmed/cancelled/settling/settled)
+    key_schema: aggregate_id (UUID)
+    value_schema: domain event JSON envelope
+
+  # ── Quote / RFQ ────────────────────────────────────────────────────────────
+  - name: exchangeos.quote.events
+    description: Quote + RFQ lifecycle (quote.created/accepted, rfq.requested/quoted/accepted/rejected/expired)
+    key_schema: aggregate_id (UUID)
+
+  # ── Settlement (CLS + PayIn + NetReport) ──────────────────────────────────
+  - name: exchangeos.cls_settlement.events
+    description: CLSCycle lifecycle (opened/trade_attached/payin_opened/settling/closed/failed)
+    key_schema: cycle_id
+  - name: exchangeos.payin.events
+    description: PayInInstruction lifecycle (created/submitted/confirmed/failed)
+    key_schema: cycle_id
+  - name: exchangeos.netreport.events
+    description: NetReport generation events
+    key_schema: cycle_id
+
+  # ── CFETS ──────────────────────────────────────────────────────────────────
+  - name: exchangeos.cfets_capture.events
+    description: CFETS Capture lifecycle (drafted/submitted/acked/rejected/notified)
+    key_schema: capture_id
+  - name: exchangeos.cfets_confirmation.events
+    description: CFETS Confirmation lifecycle (requested/paired/unpaired/rejected)
+    key_schema: confirmation_id
+
+  # ── Risk + Position ────────────────────────────────────────────────────────
+  - name: exchangeos.risk.events
+    description: Limit breach / reserve / release events
+    key_schema: tenant_id + limit_type + scope
+  - name: exchangeos.position.events
+    description: Position changes (apply trade leg)
+    key_schema: tenant_id + currency
+
+  # ── Compliance + Admin ─────────────────────────────────────────────────────
+  - name: exchangeos.compliance.events
+    description: Classification / IOF / BACEN report / Screening events
+    key_schema: tenant_id + trade_id
+    retention_ms: 604800000  # 7 days — PII bearing
+  - name: exchangeos.admin.system_events
+    description: SystemEvent stream (admi.x mapped)
+    key_schema: component
+  - name: exchangeos.admin.eod_jobs
+    description: EOD orchestration events
+    key_schema: tenant_id + business_date
+
+  # ── RefData / Pricing feed (read-mostly; compacted) ───────────────────────
+  - name: exchangeos.refdata.spot_rates
+    description: Spot rate feed (one record per (pair, timestamp))
+    cleanup_policy: compact
+    retention_ms: 86400000   # 1 day for live ticks; compacted view kept long-term
+
+  - name: exchangeos.refdata.ptax
+    description: BACEN PTAX 4-window fixings (one per business_date)
+    cleanup_policy: compact
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ACL Policy (RBAC by service identity)
+# ─────────────────────────────────────────────────────────────────────────────
+acls:
+  exchangeos-api:
+    produce: [exchangeos.trade.events, exchangeos.quote.events, exchangeos.refdata.spot_rates]
+    consume: []   # API is producer-only; reads via direct DB
+  exchangeos-worker:
+    produce: [exchangeos.compliance.events, exchangeos.admin.system_events]
+    consume: [exchangeos.trade.events, exchangeos.quote.events]
+  exchangeos-cls-cycle:
+    produce: [exchangeos.cls_settlement.events, exchangeos.payin.events, exchangeos.netreport.events]
+    consume: [exchangeos.trade.events]
+  exchangeos-eod:
+    produce: [exchangeos.admin.eod_jobs, exchangeos.refdata.ptax]
+    consume: [exchangeos.trade.events, exchangeos.position.events]
+  exchangeos-mq-bridge:
+    produce: [exchangeos.trade.events]   # SWIFT MT in → fxtr out
+    consume: []

@@ -1,0 +1,144 @@
+{
+  "title": "ExchangeOS — FinOps",
+  "uid": "exchangeos-finops",
+  "tags": ["exchangeos", "finops", "cost"],
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1h",
+  "time": { "from": "now-30d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "env",
+        "type": "custom",
+        "current": { "value": "production", "text": "production" },
+        "options": [
+          { "value": "dev", "text": "dev" },
+          { "value": "staging", "text": "staging" },
+          { "value": "production", "text": "production" }
+        ]
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Month-to-date spend (USD)",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(gcp_billing_cost_usd{module=\"exchangeos\", env=\"$env\"})",
+          "refId": "A"
+        }
+      ],
+      "options": { "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 40000 },
+              { "color": "red", "value": 50000 }
+            ]
+          },
+          "unit": "currencyUSD"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Forecasted month-end (USD)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "predict_linear(sum(gcp_billing_cost_usd{module=\"exchangeos\", env=\"$env\"})[7d:1h], (86400 * (30 - day_of_month())))",
+          "refId": "A"
+        }
+      ],
+      "options": { "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD" }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Daily spend (USD) — last 30d",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(gcp_billing_cost_usd{module=\"exchangeos\", env=\"$env\"}[1d]))",
+          "refId": "A",
+          "legendFormat": "total"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "piechart",
+      "title": "Spend by service (MTD)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum by (service) (gcp_billing_cost_usd{module=\"exchangeos\", env=\"$env\"})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "bargauge",
+      "title": "Spend by BC (MTD)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "expr": "sum by (bc) (gcp_billing_cost_usd{module=\"exchangeos\", env=\"$env\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Unlabeled spend (escapes FinOps allocation)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        {
+          "expr": "sum by (resource_name) (gcp_billing_cost_usd{module=\"\", project=~\"revenu-platform-.*\"})",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "description": "Resources without a `module` label — must be back-filled per cost-allocation.md"
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "GitHub Actions minutes (this month)",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 20 },
+      "targets": [
+        {
+          "expr": "sum(github_actions_minutes_total{repo=\"exchangeos\"})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Local-gate pre-empted minutes (savings)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 20 },
+      "targets": [
+        {
+          "expr": "sum(lefthook_run_total{repo=\"exchangeos\"}) * 2",
+          "refId": "A"
+        }
+      ],
+      "description": "Each lefthook run that would have failed in CI saves ~2 CI minutes (assumes avg fail cost)"
+    }
+  ]
+}

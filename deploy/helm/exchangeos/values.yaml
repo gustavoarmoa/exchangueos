@@ -1,0 +1,119 @@
+# ExchangeOS Helm values — production defaults.
+# Override per environment via values-{dev,staging,production}.yaml.
+
+global:
+  imageRegistry: gcr.io/revenu-platform
+  imagePullPolicy: IfNotPresent
+  env: production
+  region: us-east1
+
+# One deployment per binary (7 total).
+binaries:
+  api:
+    enabled: true
+    replicaCount: 3
+    image:
+      repository: exchangeos-api
+      tag: latest
+    ports:
+      http: 8094
+      grpc: 9094
+    resources:
+      requests: { cpu: 200m, memory: 256Mi }
+      limits:   { cpu: 2,    memory: 1Gi }
+    hpa:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 30
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      minAvailable: 2
+
+  worker:
+    enabled: true
+    replicaCount: 2
+    image: { repository: exchangeos-worker, tag: latest }
+    resources:
+      requests: { cpu: 200m, memory: 256Mi }
+      limits:   { cpu: 1,    memory: 512Mi }
+
+  migrator:
+    enabled: true
+    image: { repository: exchangeos-migrator, tag: latest }
+    # Runs as Job, not Deployment.
+    runAs: job
+    job:
+      backoffLimit: 3
+      activeDeadlineSeconds: 600
+
+  cls-cycle:
+    enabled: true
+    replicaCount: 1   # singleton — leader election via lease
+    image: { repository: exchangeos-cls-cycle, tag: latest }
+
+  eod:
+    enabled: true
+    runAs: cronJob
+    cronJob:
+      schedule: "0 23 * * 1-5"   # 23:00 UTC weekdays
+      concurrencyPolicy: Forbid
+    image: { repository: exchangeos-eod, tag: latest }
+
+  mq-bridge:
+    enabled: false   # off until SWIFT MT customer signs up
+    image: { repository: exchangeos-mq-bridge, tag: latest }
+
+  cred-rotator:
+    enabled: true
+    runAs: cronJob
+    cronJob:
+      schedule: "0 3 1 * *"     # monthly at 03:00 UTC
+      concurrencyPolicy: Forbid
+    image: { repository: exchangeos-cred-rotator, tag: latest }
+
+# ── Shared config ─────────────────────────────────────────────────────────────
+
+config:
+  EXCHANGEOS_ENV: production
+  EXCHANGEOS_REPO_BACKEND: postgres
+  OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector.observability.svc.cluster.local:4317
+  OTEL_EXPORTER_OTLP_INSECURE: "false"
+
+# Secrets sourced from Vault via the External Secrets Operator.
+externalSecrets:
+  enabled: true
+  vaultStore: vault-backend
+  secrets:
+    - name: exchangeos-db
+      vaultPath: secret/data/exchangeos/db
+      keys: [dsn]
+    - name: exchangeos-oidc
+      vaultPath: secret/data/exchangeos/oidc
+      keys: [client_secret]
+
+# Workload Identity Federation — zero JSON keys.
+serviceAccount:
+  create: true
+  name: exchangeos
+  annotations:
+    iam.gke.io/gcp-service-account: exchangeos@revenu-platform.iam.gserviceaccount.com
+
+# Observability sidecars
+observability:
+  prometheus:
+    scrape: true
+    port: 8094
+    path: /metrics
+
+# Argo Rollouts canary spec (used by templates/rollout.yaml when binaries.api.runAs == "rollout").
+rollout:
+  enabled: true
+  strategy: canary
+  steps:
+    - setWeight: 10
+    - pause: { duration: 5m }
+    - setWeight: 30
+    - pause: { duration: 10m }
+    - setWeight: 60
+    - pause: { duration: 10m }
+    - setWeight: 100

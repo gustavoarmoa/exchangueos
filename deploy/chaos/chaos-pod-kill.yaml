@@ -1,0 +1,137 @@
+# CHAOS-01 + CHAOS-02 — Pod kill scenarios for exchangeos-api + worker.
+#
+# Litmus 3.x ChaosEngine. Requires:
+#   - Litmus operator installed in the cluster (litmus namespace)
+#   - chaos-runner ServiceAccount with permission to delete pods in `exchangeos`
+#   - Prometheus AnalysisTemplate `exchangeos-steady-state` (see SLO doc)
+#
+# Run via:
+#   kubectl apply -f deploy/chaos/chaos-pod-kill.yaml
+#   kubectl describe chaosengine exchangeos-api-pod-kill -n exchangeos | tail
+#
+# Steady-state: 5xx rate < 1%, p99 latency < 200ms throughout the experiment.
+
+---
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: exchangeos-api-pod-kill
+  namespace: exchangeos
+  labels:
+    module: exchangeos
+    env: staging
+    bc: shared
+    tier: runtime
+spec:
+  appinfo:
+    appns: exchangeos
+    applabel: 'app.kubernetes.io/name=exchangeos-api'
+    appkind: deployment
+  chaosServiceAccount: chaos-runner
+  jobCleanUpPolicy: retain  # keep job for post-experiment forensics
+  engineState: 'active'
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            # Kill 1 pod every 10s for 60s = 6 deletions
+            - name: TOTAL_CHAOS_DURATION
+              value: '60'
+            - name: CHAOS_INTERVAL
+              value: '10'
+            - name: FORCE
+              value: 'false'  # respect graceful shutdown (10s SIGTERM)
+            - name: PODS_AFFECTED_PERC
+              value: '25'      # never take down > 25% of replicas at once
+        probe:
+          # Steady-state probe — 5xx rate must stay < 1% during chaos
+          - name: api-5xx-rate-low
+            type: promProbe
+            mode: Continuous
+            runProperties:
+              probeTimeout: 5
+              retry: 1
+              interval: 2
+              probePollingInterval: 2
+              stopOnFailure: true
+            promProbe/inputs:
+              endpoint: 'http://prometheus.monitoring.svc:9090'
+              query: |
+                sum(rate(http_requests_total{job="exchangeos-api",code=~"5.."}[1m]))
+                / sum(rate(http_requests_total{job="exchangeos-api"}[1m]))
+              comparator:
+                type: float
+                criteria: '<='
+                value: '0.01'  # 1%
+          # Latency probe — p99 < 200ms
+          - name: api-p99-latency-ok
+            type: promProbe
+            mode: Continuous
+            runProperties:
+              probeTimeout: 5
+              retry: 1
+              interval: 2
+              probePollingInterval: 2
+              stopOnFailure: true
+            promProbe/inputs:
+              endpoint: 'http://prometheus.monitoring.svc:9090'
+              query: |
+                histogram_quantile(0.99,
+                  sum(rate(http_request_duration_ms_bucket{job="exchangeos-api"}[1m])) by (le))
+              comparator:
+                type: float
+                criteria: '<='
+                value: '200'
+
+---
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: exchangeos-worker-pod-kill
+  namespace: exchangeos
+  labels:
+    module: exchangeos
+    env: staging
+    bc: shared
+    tier: runtime
+spec:
+  appinfo:
+    appns: exchangeos
+    applabel: 'app.kubernetes.io/name=exchangeos-worker'
+    appkind: deployment
+  chaosServiceAccount: chaos-runner
+  jobCleanUpPolicy: retain
+  engineState: 'active'
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: '120'
+            - name: CHAOS_INTERVAL
+              value: '60'
+            - name: FORCE
+              value: 'false'
+            - name: PODS_AFFECTED_PERC
+              value: '50'  # worker has only 2 replicas — 50% = 1 pod
+        probe:
+          # Outbox dispatch must catch up within 120s of pod death
+          - name: outbox-lag-recovers
+            type: promProbe
+            mode: Edge  # check at start + at end
+            runProperties:
+              probeTimeout: 5
+              retry: 0
+              interval: 2
+              probePollingInterval: 2
+              stopOnFailure: false  # don't abort — we want the full timeline
+            promProbe/inputs:
+              endpoint: 'http://prometheus.monitoring.svc:9090'
+              query: |
+                outbox_pending_oldest_occurred_at_seconds_offset
+              comparator:
+                type: float
+                criteria: '<='
+                value: '300'  # < 5 min recovery target (SLO doc)

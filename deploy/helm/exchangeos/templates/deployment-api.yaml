@@ -1,0 +1,57 @@
+{{- if .Values.binaries.api.enabled }}
+{{- $binaryName := "api" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "exchangeos.fullname" (dict "Release" .Release "binaryName" $binaryName) }}
+  labels: {{- include "exchangeos.labels" (dict "Release" .Release "binaryName" $binaryName) | nindent 4 }}
+spec:
+  replicas: {{ .Values.binaries.api.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: {{ $binaryName }}
+  template:
+    metadata:
+      labels: {{- include "exchangeos.labels" (dict "Release" .Release "binaryName" $binaryName) | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "{{ .Values.observability.prometheus.scrape }}"
+        prometheus.io/port: "{{ .Values.observability.prometheus.port }}"
+        prometheus.io/path: "{{ .Values.observability.prometheus.path }}"
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+      containers:
+        - name: api
+          image: {{ include "exchangeos.image" (dict "Values" .Values "binaryName" $binaryName) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.binaries.api.ports.http }}
+            - name: grpc
+              containerPort: {{ .Values.binaries.api.ports.grpc }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-config
+            - secretRef:
+                name: exchangeos-db
+            - secretRef:
+                name: exchangeos-oidc
+          resources: {{- toYaml .Values.binaries.api.resources | nindent 12 }}
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+{{- end }}

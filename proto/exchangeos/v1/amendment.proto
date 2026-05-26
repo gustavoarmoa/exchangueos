@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+import "exchangeos/v1/common.proto";
+
+// AmendmentService — internal Revenu service (no direct ISO 20022 mapping).
+// Tracks trade amendments (rate/amount/value-date changes) for audit + ledger replay.
+service AmendmentService {
+  rpc ProposeAmendment(ProposeAmendmentRequest) returns (ProposeAmendmentResponse);
+  rpc ApproveAmendment(ApproveAmendmentRequest) returns (ApproveAmendmentResponse);
+  rpc ListAmendments(ListAmendmentsRequest) returns (ListAmendmentsResponse);
+}
+
+enum AmendmentStatus {
+  AMENDMENT_STATUS_UNSPECIFIED = 0;
+  AMENDMENT_STATUS_PROPOSED = 1;
+  AMENDMENT_STATUS_APPROVED = 2;
+  AMENDMENT_STATUS_REJECTED = 3;
+  AMENDMENT_STATUS_APPLIED = 4;
+}
+
+message Amendment {
+  string amendment_id = 1;
+  string trade_id = 2;
+  string tenant_id = 3;
+  AmendmentStatus status = 4;
+  string change_type = 5;        // RATE | AMOUNT | VALUE_DATE | COUNTERPARTY
+  string before_json = 6;        // canonical JSON snapshot
+  string after_json = 7;
+  string proposer = 8;
+  string approver = 9;
+  google.protobuf.Timestamp proposed_at = 10;
+  google.protobuf.Timestamp approved_at = 11;
+  AuditEnvelope audit = 90;
+}
+
+message ProposeAmendmentRequest {
+  TenantContext tenant = 1;
+  Amendment amendment = 2;
+}
+
+message ProposeAmendmentResponse {
+  Amendment amendment = 1;
+}
+
+message ApproveAmendmentRequest {
+  TenantContext tenant = 1;
+  string amendment_id = 2;
+}
+
+message ApproveAmendmentResponse {
+  Amendment amendment = 1;
+}
+
+message ListAmendmentsRequest {
+  TenantContext tenant = 1;
+  string trade_id = 2;
+  PageRequest page = 3;
+}
+
+message ListAmendmentsResponse {
+  repeated Amendment amendments = 1;
+  PageResponse page = 2;
+}

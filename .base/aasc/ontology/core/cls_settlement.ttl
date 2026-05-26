@@ -1,0 +1,49 @@
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix exos:   <http://exchangeos.revenu.tech/ontology/cls_settlement#> .
+@prefix exost:  <http://exchangeos.revenu.tech/ontology/trade#> .
+
+<http://exchangeos.revenu.tech/ontology/cls_settlement>
+    a owl:Ontology ;
+    owl:versionIRI <http://exchangeos.revenu.tech/ontology/cls_settlement/1.2.0> ;
+    owl:versionInfo "1.2.0" ;
+    dct:title "ExchangeOS CLS Settlement Ontology"@en, "Ontologia de Liquidação CLS"@pt .
+
+exos:CLSCycle a owl:Class ;
+    rdfs:label "CLS Cycle"@en, "Ciclo CLS"@pt ;
+    rdfs:comment "Daily CLS PvP settlement cycle (07:00-12:00 CET)."@en .
+
+exos:CycleStatus a owl:Class .
+
+exos:Open          a exos:CycleStatus ; rdfs:label "OPEN"@en .
+exos:PayInWindow   a exos:CycleStatus ; rdfs:label "PAY_IN_WINDOW"@en .
+exos:Settling      a exos:CycleStatus ; rdfs:label "SETTLING"@en .
+exos:Closed        a exos:CycleStatus ; rdfs:label "CLOSED"@en .
+exos:Failed        a exos:CycleStatus ; rdfs:label "FAILED"@en .
+
+exos:PayInInstruction a owl:Class ;
+    rdfs:label "Pay-In Instruction"@en .
+
+exos:DeadlineBand a owl:Class .
+exos:PIN1 a exos:DeadlineBand ; rdfs:label "PIN1 (08:00 CET, Asia-Pacific)"@en .
+exos:PIN2 a exos:DeadlineBand ; rdfs:label "PIN2 (09:00 CET, Europe)"@en .
+exos:PIN3 a exos:DeadlineBand ; rdfs:label "PIN3 (10:00 CET, Americas)"@en .
+
+exos:NetReport a owl:Class ;
+    rdfs:label "Net Report"@en ;
+    rdfs:comment "Per-currency net settlement summary (camt.088)."@en .
+
+exos:containsTrade a owl:ObjectProperty ;
+    rdfs:domain exos:CLSCycle ;
+    rdfs:range  exost:FXTrade .
+
+exos:hasDeadline a owl:DatatypeProperty ;
+    rdfs:domain exos:PayInInstruction ;
+    rdfs:range  xsd:dateTime .
+
+exos:netSettlement a owl:DatatypeProperty ;
+    rdfs:domain exos:NetReport ;
+    rdfs:range  xsd:decimal .

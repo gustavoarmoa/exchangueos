@@ -1,0 +1,48 @@
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix fibo-fbc-fi-fi: <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/FinancialInstruments/> .
+@prefix exos:   <http://exchangeos.revenu.tech/ontology/refdata#> .
+
+<http://exchangeos.revenu.tech/ontology/refdata>
+    a owl:Ontology ;
+    owl:versionIRI <http://exchangeos.revenu.tech/ontology/refdata/1.2.0> ;
+    owl:versionInfo "1.2.0" ;
+    dct:title "ExchangeOS RefData Ontology"@en, "Ontologia de Dados de Referência"@pt ;
+    dct:description "Currencies, calendars, BIC records, SSIs."@en .
+
+exos:Currency a owl:Class ;
+    rdfs:label "Currency"@en, "Moeda"@pt ;
+    skos:closeMatch fibo-fbc-fi-fi:Currency .
+
+exos:Calendar a owl:Class ;
+    rdfs:label "Calendar"@en, "Calendário"@pt .
+
+exos:BICRecord a owl:Class ;
+    rdfs:label "BIC Record"@en .
+
+exos:SSI a owl:Class ;
+    rdfs:label "Standing Settlement Instruction"@en, "Instrução Permanente de Liquidação"@pt .
+
+exos:SpotRate a owl:Class ;
+    rdfs:label "Spot Rate"@en .
+
+exos:code a owl:DatatypeProperty ;
+    rdfs:domain exos:Currency ;
+    rdfs:range xsd:string ;
+    rdfs:comment "ISO 4217 alpha-3"@en .
+
+exos:clsEligible a owl:DatatypeProperty ;
+    rdfs:domain exos:Currency ; rdfs:range xsd:boolean .
+
+exos:cfetsEligible a owl:DatatypeProperty ;
+    rdfs:domain exos:Currency ; rdfs:range xsd:boolean .
+
+exos:hasHoliday a owl:DatatypeProperty ;
+    rdfs:domain exos:Calendar ; rdfs:range xsd:date .
+
+exos:hasBIC a owl:DatatypeProperty ;
+    rdfs:domain exos:BICRecord ; rdfs:range xsd:string ;
+    rdfs:comment "ISO 9362 (8 or 11 chars)"@en .

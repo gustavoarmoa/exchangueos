@@ -1,0 +1,48 @@
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix exos:   <http://exchangeos.revenu.tech/ontology/quote#> .
+@prefix exost:  <http://exchangeos.revenu.tech/ontology/trade#> .
+
+<http://exchangeos.revenu.tech/ontology/quote>
+    a owl:Ontology ;
+    owl:versionIRI <http://exchangeos.revenu.tech/ontology/quote/1.2.0> ;
+    owl:versionInfo "1.2.0" ;
+    dct:title "ExchangeOS Quote Ontology"@en, "Ontologia de Cotação ExchangeOS"@pt ;
+    dct:description "Quote + RFQ aggregates with bid/ask economics + TTL validity window."@en .
+
+exos:Quote a owl:Class ;
+    rdfs:label "Quote"@en, "Cotação"@pt .
+
+exos:RFQ a owl:Class ;
+    rdfs:label "Request For Quote"@en, "Pedido de Cotação"@pt .
+
+exos:RFQStatus a owl:Class ;
+    rdfs:label "RFQ Status"@en .
+
+exos:Requested a exos:RFQStatus ; rdfs:label "REQUESTED"@en .
+exos:Quoted    a exos:RFQStatus ; rdfs:label "QUOTED"@en .
+exos:Accepted  a exos:RFQStatus ; rdfs:label "ACCEPTED"@en .
+exos:Rejected  a exos:RFQStatus ; rdfs:label "REJECTED"@en .
+exos:Expired   a exos:RFQStatus ; rdfs:label "EXPIRED"@en .
+
+exos:hasBid a owl:DatatypeProperty ;
+    rdfs:domain exos:Quote ; rdfs:range xsd:decimal ;
+    rdfs:label "bid"@en .
+
+exos:hasAsk a owl:DatatypeProperty ;
+    rdfs:domain exos:Quote ; rdfs:range xsd:decimal ;
+    rdfs:label "ask"@en .
+
+exos:validFrom a owl:DatatypeProperty ;
+    rdfs:domain exos:Quote ; rdfs:range xsd:dateTime .
+
+exos:validTo a owl:DatatypeProperty ;
+    rdfs:domain exos:Quote ; rdfs:range xsd:dateTime .
+
+exos:acceptsTo a owl:ObjectProperty ;
+    rdfs:domain exos:Quote ;
+    rdfs:range  exost:FXTrade ;
+    rdfs:label  "accepts to trade"@en .

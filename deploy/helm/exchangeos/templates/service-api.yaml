@@ -1,0 +1,21 @@
+{{- if .Values.binaries.api.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    app.kubernetes.io/name: exchangeos
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.binaries.api.ports.http }}
+      targetPort: http
+    - name: grpc
+      port: {{ .Values.binaries.api.ports.grpc }}
+      targetPort: grpc
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: api
+{{- end }}

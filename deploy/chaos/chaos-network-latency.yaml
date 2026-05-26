@@ -1,0 +1,48 @@
+# CHAOS-04 — Inject 200ms latency on CRDB → api connections.
+#
+# Chaos Mesh NetworkChaos. Targets traffic from api pods → CRDB hub
+# (postgres port 26257). Validates connection pool absorbs latency without
+# breaching p99 trade-booking SLO (< 500ms).
+#
+# Run via:
+#   kubectl apply -f deploy/chaos/chaos-network-latency.yaml
+#   kubectl describe networkchaos exchangeos-crdb-latency -n exchangeos
+#
+# IMPORTANT: requires Chaos Mesh installed in cluster + capabilities to manipulate
+# tc on the pod network namespace. Production deployment requires SE Linux/
+# AppArmor exception — coordinate with security team.
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: exchangeos-crdb-latency
+  namespace: exchangeos
+  labels:
+    module: exchangeos
+    env: staging
+    bc: shared
+    tier: runtime
+spec:
+  action: delay
+  mode: all  # affect all matching pods (api)
+  selector:
+    namespaces:
+      - exchangeos
+    labelSelectors:
+      'app.kubernetes.io/name': 'exchangeos-api'
+  delay:
+    latency: '200ms'
+    correlation: '50'  # 50% of packets correlated (more realistic than pure-random)
+    jitter: '20ms'
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces:
+        - cockroachdb-hub  # adjust to actual CRDB namespace
+      labelSelectors:
+        'app': 'cockroachdb'
+  duration: '5m'
+  # ─── Stop conditions (manual abort if these trip) ─────────────────────────
+  # If p99 trade booking > 500ms for > 30s consecutive → kubectl delete networkchaos
+  # If 5xx rate > 5% → abort immediately

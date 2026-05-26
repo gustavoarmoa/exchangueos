@@ -1,0 +1,60 @@
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix exos:   <http://exchangeos.revenu.tech/ontology/compliance#> .
+@prefix exost:  <http://exchangeos.revenu.tech/ontology/trade#> .
+
+<http://exchangeos.revenu.tech/ontology/compliance>
+    a owl:Ontology ;
+    owl:versionIRI <http://exchangeos.revenu.tech/ontology/compliance/1.2.0> ;
+    owl:versionInfo "1.2.0" ;
+    dct:title "ExchangeOS Compliance Ontology"@en, "Ontologia de Compliance ExchangeOS"@pt ;
+    dct:description "BACEN classification + IOF + reporting + sanctions screening."@en .
+
+exos:Classification a owl:Class ;
+    rdfs:label "BACEN Nature Classification"@en, "Classificação de Natureza BACEN"@pt ;
+    rdfs:comment "One of 95 codes per Circ 3.690."@en .
+
+exos:Nature a owl:Class .
+exos:Remessa   a exos:Nature ; rdfs:label "REMESSA (outflow)"@en .
+exos:Ingresso  a exos:Nature ; rdfs:label "INGRESSO (inflow)"@en .
+exos:Conversao a exos:Nature ; rdfs:label "CONVERSAO (FX between two foreign CCYs)"@en .
+
+exos:IOFComputation a owl:Class ;
+    rdfs:label "IOF Computation"@en ;
+    rdfs:comment "Tax per Decreto 12.499/2025; 6 rates."@en .
+
+exos:BACENReport a owl:Class ;
+    rdfs:label "BACEN Report"@en .
+
+exos:ReportType a owl:Class .
+exos:SISBACEN   a exos:ReportType .
+exos:BCBCCS     a exos:ReportType ; rdfs:label "BCB-CCS"@en .
+exos:BCBCambio  a exos:ReportType ; rdfs:label "BCB-CAMBIO"@en .
+
+exos:ScreeningResult a owl:Class ;
+    rdfs:label "Sanctions Screening Result"@en .
+
+exos:RiskLevel a owl:Class .
+exos:Low    a exos:RiskLevel ; rdfs:label "LOW"@en .
+exos:Medium a exos:RiskLevel ; rdfs:label "MEDIUM"@en .
+exos:High   a exos:RiskLevel ; rdfs:label "HIGH (RN_FX_039 — SISCOAF COS required)"@en .
+
+exos:classifies a owl:ObjectProperty ;
+    rdfs:domain exos:Classification ;
+    rdfs:range  exost:FXTrade .
+
+exos:appliedTo a owl:ObjectProperty ;
+    rdfs:domain exos:IOFComputation ;
+    rdfs:range  exost:FXTrade .
+
+exos:iofAmount a owl:DatatypeProperty ;
+    rdfs:domain exos:IOFComputation ;
+    rdfs:range  xsd:decimal .
+
+exos:iofRate a owl:DatatypeProperty ;
+    rdfs:domain exos:IOFComputation ;
+    rdfs:range  xsd:decimal ;
+    rdfs:comment "Fraction (e.g. 0.0038 for 0.38%)."@en .

@@ -1,0 +1,29 @@
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix exos:   <http://exchangeos.revenu.tech/ontology/netreport#> .
+@prefix exosc:  <http://exchangeos.revenu.tech/ontology/cls_settlement#> .
+
+<http://exchangeos.revenu.tech/ontology/netreport>
+    a owl:Ontology ;
+    owl:versionIRI <http://exchangeos.revenu.tech/ontology/netreport/1.2.0> ;
+    owl:versionInfo "1.2.0" ;
+    dct:title "ExchangeOS Net Report Ontology"@en, "Ontologia de Relatório Líquido"@pt ;
+    dct:description "End-of-cycle netting summary aligned with camt.088."@en .
+
+exos:NetReport a owl:Class ;
+    rdfs:label "Net Report"@en ;
+    rdfs:comment "One per (cycle, currency)."@en .
+
+exos:summarises a owl:ObjectProperty ;
+    rdfs:domain exos:NetReport ;
+    rdfs:range  exosc:CLSCycle .
+
+exos:grossPayIn  a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+exos:grossPayOut a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+exos:netSettlement a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+
+exos:isReceivable a owl:DatatypeProperty ;
+    rdfs:domain exos:NetReport ; rdfs:range xsd:boolean ;
+    rdfs:comment "True when netSettlement > 0."@en .

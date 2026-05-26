@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+import "exchangeos/v1/common.proto";
+
+// SettlementService — orchestrates CLS + bilateral settlement.
+// Maps to ISO 20022 camt.061/062/063 (PayIn schedule) + camt.088 (NetReport).
+service SettlementService {
+  rpc OpenCycle(OpenCycleRequest) returns (OpenCycleResponse);
+  rpc SubmitPayIn(SubmitPayInRequest) returns (SubmitPayInResponse);
+  rpc GetNetReport(GetNetReportRequest) returns (GetNetReportResponse);
+  rpc CloseCycle(CloseCycleRequest) returns (CloseCycleResponse);
+}
+
+enum CycleStatus {
+  CYCLE_STATUS_UNSPECIFIED = 0;
+  CYCLE_STATUS_OPEN = 1;
+  CYCLE_STATUS_PAY_IN_WINDOW = 2;
+  CYCLE_STATUS_SETTLING = 3;
+  CYCLE_STATUS_CLOSED = 4;
+  CYCLE_STATUS_FAILED = 5;
+}
+
+message CLSCycle {
+  string cycle_id = 1;
+  string tenant_id = 2;
+  CycleStatus status = 3;
+  google.protobuf.Timestamp opened_at = 4;      // 07:00 CET
+  google.protobuf.Timestamp pay_in_deadline_1 = 5;  // 08:00 CET
+  google.protobuf.Timestamp pay_in_deadline_2 = 6;  // 09:00 CET
+  google.protobuf.Timestamp pay_in_deadline_3 = 7;  // 10:00 CET
+  google.protobuf.Timestamp closed_at = 8;      // 12:00 CET
+  repeated string trade_ids = 9;
+  AuditEnvelope audit = 90;
+}
+
+message PayInInstruction {
+  string instruction_id = 1;
+  string cycle_id = 2;
+  string tenant_id = 3;
+  string currency = 4;
+  Money amount = 5;
+  google.protobuf.Timestamp deadline = 6;
+  google.protobuf.Timestamp submitted_at = 7;
+  string status = 8;        // PENDING | SUBMITTED | CONFIRMED | FAILED
+  AuditEnvelope audit = 90;
+}
+
+message OpenCycleRequest {
+  TenantContext tenant = 1;
+  google.protobuf.Timestamp cycle_date = 2;
+}
+
+message OpenCycleResponse {
+  CLSCycle cycle = 1;
+}
+
+message SubmitPayInRequest {
+  TenantContext tenant = 1;
+  PayInInstruction instruction = 2;
+}
+
+message SubmitPayInResponse {
+  PayInInstruction instruction = 1;
+}
+
+message GetNetReportRequest {
+  TenantContext tenant = 1;
+  string cycle_id = 2;
+}
+
+message GetNetReportResponse {
+  string report_xml = 1;     // camt.088 envelope
+  google.protobuf.Timestamp generated_at = 2;
+}
+
+message CloseCycleRequest {
+  TenantContext tenant = 1;
+  string cycle_id = 2;
+}
+
+message CloseCycleResponse {
+  CLSCycle cycle = 1;
+}

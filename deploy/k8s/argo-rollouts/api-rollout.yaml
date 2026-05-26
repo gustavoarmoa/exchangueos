@@ -1,0 +1,75 @@
+# Argo Rollouts canary spec for exchangeos-api.
+# Promotion gates: 10% → pause 5m → 30% → pause 10m → 60% → pause 10m → 100%.
+# Auto-rollback on Prometheus AnalysisTemplate failure (5xx > 1% or p99 > 500ms).
+
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: exchangeos-api
+  labels:
+    app.kubernetes.io/name: exchangeos
+    app.kubernetes.io/component: api
+spec:
+  replicas: 3
+  strategy:
+    canary:
+      maxSurge: "25%"
+      maxUnavailable: 0
+      analysis:
+        templates:
+          - templateName: exchangeos-api-health
+        startingStep: 2
+      steps:
+        - setWeight: 10
+        - pause: { duration: 5m }
+        - setWeight: 30
+        - pause: { duration: 10m }
+        - setWeight: 60
+        - pause: { duration: 10m }
+        - setWeight: 100
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: exchangeos
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: exchangeos
+        app.kubernetes.io/component: api
+    spec:
+      serviceAccountName: exchangeos
+      containers:
+        - name: api
+          image: gcr.io/revenu-platform/exchangeos-api:v0.1.0
+          ports:
+            - containerPort: 8094
+              name: http
+            - containerPort: 9094
+              name: grpc
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: exchangeos-api-health
+spec:
+  metrics:
+    - name: http-5xx-rate
+      interval: 30s
+      successCondition: result[0] < 0.01    # < 1% 5xx
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus.observability.svc.cluster.local:9090
+          query: |
+            sum(rate(http_requests_total{job="exchangeos-api",status=~"5.."}[1m])) /
+            sum(rate(http_requests_total{job="exchangeos-api"}[1m]))
+    - name: http-p99-latency
+      interval: 30s
+      successCondition: result[0] < 500   # ms
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus.observability.svc.cluster.local:9090
+          query: |
+            histogram_quantile(0.99,
+              sum(rate(http_request_duration_ms_bucket{job="exchangeos-api"}[1m])) by (le))

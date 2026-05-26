@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package exchangeos.v1;
+
+option go_package = "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1;exchangeosv1";
+
+import "google/protobuf/timestamp.proto";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Money — decimal string to preserve precision (NEVER float64 for money/rate).
+// ─────────────────────────────────────────────────────────────────────────────
+message Money {
+  string amount = 1;       // decimal string, e.g. "1234567.890123" (shopspring/decimal)
+  string currency = 2;     // ISO 4217 alpha-3 (e.g. "USD","BRL","EUR")
+}
+
+// FX Rate — exchange rate as decimal string (CCY1/CCY2 conversion).
+message FxRate {
+  string rate = 1;         // decimal string, e.g. "5.123456" (BRL per USD)
+  string base_ccy = 2;     // ISO 4217 alpha-3
+  string quote_ccy = 3;    // ISO 4217 alpha-3
+  google.protobuf.Timestamp as_of = 4;
+}
+
+// Party — counterparty (BIC + LEI + name).
+message Party {
+  string bic = 1;          // ISO 9362 (8 or 11 chars), e.g. "CLSBUS33"
+  string lei = 2;          // ISO 17442 (20 chars)
+  string name = 3;
+  string country = 4;      // ISO 3166 alpha-2
+}
+
+// Tenant context (multi-tenant separation).
+message TenantContext {
+  string tenant_id = 1;    // UUIDv7
+  string actor_id = 2;     // user/system actor
+  string correlation_id = 3;
+  string causation_id = 4;
+}
+
+// Audit envelope (envelope-of-envelopes pattern — present in every message).
+message AuditEnvelope {
+  string event_id = 1;
+  google.protobuf.Timestamp occurred_at = 2;
+  google.protobuf.Timestamp recorded_at = 3;
+  string source = 4;       // service emitting the event
+  string version = 5;      // schema version (semver)
+  TenantContext tenant = 6;
+}
+
+// Error code (canonical errors — pkg/errors).
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_VALIDATION = 1;
+  ERROR_CODE_NOT_FOUND = 2;
+  ERROR_CODE_ALREADY_EXISTS = 3;
+  ERROR_CODE_PERMISSION_DENIED = 4;
+  ERROR_CODE_UNAUTHENTICATED = 5;
+  ERROR_CODE_FAILED_PRECONDITION = 6;
+  ERROR_CODE_ABORTED = 7;
+  ERROR_CODE_OUT_OF_RANGE = 8;
+  ERROR_CODE_UNIMPLEMENTED = 9;
+  ERROR_CODE_INTERNAL = 10;
+  ERROR_CODE_UNAVAILABLE = 11;
+  ERROR_CODE_DEADLINE_EXCEEDED = 12;
+  ERROR_CODE_RATE_LIMITED = 13;
+  // Domain-specific
+  ERROR_CODE_CLS_CYCLE_CLOSED = 100;
+  ERROR_CODE_CFETS_REJECTED = 101;
+  ERROR_CODE_BACEN_BLOCKED = 102;
+  ERROR_CODE_INSUFFICIENT_LIQUIDITY = 103;
+  ERROR_CODE_LIMIT_BREACHED = 104;
+}
+
+// Pagination (cursor-based — FX-API-008).
+message PageRequest {
+  int32 page_size = 1;     // max 1000
+  string page_token = 2;   // opaque cursor
+}
+
+message PageResponse {
+  string next_page_token = 1;
+  int32 total_size = 2;    // best-effort estimate
+}

@@ -1,0 +1,21 @@
+apiVersion: v2
+name: exchangeos
+description: ExchangeOS — Foreign Exchange Trading & Settlement (Revenu Platform)
+type: application
+version: 0.1.0
+appVersion: "0.1.0-dev"
+keywords:
+  - fx
+  - iso20022
+  - cls
+  - bacen
+  - cockroachdb
+home: https://revenu.tech/exchangeos
+sources:
+  - https://github.com/revenu-tech/exchangeos
+maintainers:
+  - name: Platform Team
+    email: tech@revenu.com.br
+
+# Helm 3 only. Requires sub-charts: none (CRDB/Kafka are shared infra deployed
+# via cockroachdb/modules/exchangeos + kafka/modules/exchangeos in cousin repos).

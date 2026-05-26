@@ -1,0 +1,24 @@
+# Personal/local files
+settings.local.json
+CLAUDE.local.md
+
+# Cache (performance)
+cache/
+*.cache
+
+# Memory (knowledge graph)
+memory/mcp-memory.json
+memory/session-*.json
+
+# Telemetry
+telemetry/
+*.telemetry
+
+# Bypass audit log (sensitive)
+mcp-audit.log
+bypass-audit.log
+
+# Generated artifacts
+*.tmp
+*.log
+.DS_Store

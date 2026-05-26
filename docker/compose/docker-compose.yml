@@ -1,0 +1,277 @@
+# ExchangeOS — local development stack.
+# Uses LOCAL CockroachDB (not shared hub) to avoid coupling new devs to TLS setup.
+# For shared-hub TLS test path, see: cockroachdb/modules/exchangeos/ (separate compose).
+#
+# Services:
+#   - crdb      :26257 (SQL) + :8080 (admin UI)
+#   - kafka     :9092 (Redpanda single-node)
+#   - otel      :4317 (gRPC) — Collector
+#   - exchangeos-api :8094 (HTTP) + :9094 (gRPC)
+#
+# Up:   task compose:up
+# Down: task compose:down
+
+name: exchangeos-local
+
+services:
+  crdb:
+    image: cockroachdb/cockroach:v24.3.32
+    container_name: exchangeos-crdb
+    command: start-single-node --insecure --advertise-addr=crdb
+    # NOTE: --insecure here is LOCAL-ONLY (compose). Shared-hub uses TLS.
+    ports:
+      - "26257:26257"
+      - "8090:8080"   # CRDB admin UI (avoid clash with :8080 hosts)
+    volumes:
+      - crdb-data:/cockroach/cockroach-data
+    healthcheck:
+      test: ["CMD", "/cockroach/cockroach", "sql", "--insecure", "-e", "SELECT 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  crdb-init:
+    image: cockroachdb/cockroach:v24.3.32
+    container_name: exchangeos-crdb-init
+    depends_on:
+      crdb:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        cockroach sql --insecure --host=crdb -e "
+          SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = true;
+          CREATE DATABASE IF NOT EXISTS exchangeos;
+          CREATE USER IF NOT EXISTS exchangeos_app;
+          GRANT ALL ON DATABASE exchangeos TO exchangeos_app;
+        "
+    restart: "no"
+
+  migrator:
+    # Uses `root` (cluster privileges required by golang-migrate's
+    # cockroachdb driver — schema_lock + temporary tables). The runtime app
+    # (`exchangeos_app`) NEVER needs admin rights — see api service below.
+    build:
+      context: ../..
+      dockerfile: docker/migrator/Dockerfile
+      args:
+        VERSION: dev
+        COMMIT: local
+    image: exchangeos-local-migrator
+    container_name: exchangeos-migrator
+    depends_on:
+      crdb-init:
+        condition: service_completed_successfully
+    environment:
+      EXCHANGEOS_ENV: dev
+      EXCHANGEOS_DB_DSN: postgres://root@crdb:26257/exchangeos?sslmode=disable
+    command: ["up"]
+    restart: "no"
+
+  seed:
+    # Reuses the migrator image (same binary; seed is a subcommand).
+    # Also runs as root for INSERTs into refdata tables that have explicit
+    # privileges granted only to the schema owner.
+    image: exchangeos-local-migrator
+    container_name: exchangeos-seed
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      EXCHANGEOS_ENV: dev
+      EXCHANGEOS_DB_DSN: postgres://root@crdb:26257/exchangeos?sslmode=disable
+    command: ["seed"]
+    restart: "no"
+
+  grant-app:
+    # Grants SELECT/INSERT/UPDATE/DELETE on every table created by migrator/seed
+    # to `exchangeos_app`. CRDB does NOT cascade DB-level grants to tables owned
+    # by other users (root, in our case) — this fixup step makes the runtime
+    # user actually able to read the data.
+    image: cockroachdb/cockroach:v24.3.32
+    container_name: exchangeos-grant-app
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        cockroach sql --insecure --host=crdb --database=exchangeos -e "
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO exchangeos_app;
+          ALTER DEFAULT PRIVILEGES FOR ROLE root IN SCHEMA public
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO exchangeos_app;
+        "
+    restart: "no"
+
+  kafka:
+    image: redpandadata/redpanda:v24.3.4
+    container_name: exchangeos-kafka
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://kafka:9092
+      - --pandaproxy-addr=0.0.0.0:8082
+      - --rpc-addr=0.0.0.0:33145
+      - --smp=1
+      - --memory=512M
+      - --reserve-memory=0M
+      - --overprovisioned
+    ports:
+      - "9092:9092"
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health --exit-when-healthy"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  kafka-init:
+    # Creates the 14 ExchangeOS Kafka topics catalogued in `deploy/kafka/topics.yaml`.
+    # For local: RF=1 (single broker), partitions=4 (production uses 32 — local
+    # reduces to keep memory <128MB single-broker). Idempotent: `rpk topic create`
+    # is a no-op when the topic already exists. ACLs are production-only.
+    image: redpandadata/redpanda:v24.3.4
+    container_name: exchangeos-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        BROKER="kafka:9092"
+        RF=1
+        PARTS=4
+
+        # Standard event topics (cleanup=delete, retention=30d, compression=zstd)
+        for t in \
+            exchangeos.trade.events \
+            exchangeos.quote.events \
+            exchangeos.cls_settlement.events \
+            exchangeos.payin.events \
+            exchangeos.netreport.events \
+            exchangeos.cfets_capture.events \
+            exchangeos.cfets_confirmation.events \
+            exchangeos.risk.events \
+            exchangeos.position.events \
+            exchangeos.admin.system_events \
+            exchangeos.admin.eod_jobs ; do
+          rpk topic create -X brokers=$$BROKER \
+            --partitions $$PARTS --replicas $$RF \
+            -c cleanup.policy=delete \
+            -c retention.ms=2592000000 \
+            -c compression.type=zstd \
+            -c min.insync.replicas=1 \
+            $$t || true
+        done
+
+        # PII-bearing — retention 7d
+        rpk topic create -X brokers=$$BROKER \
+          --partitions $$PARTS --replicas $$RF \
+          -c cleanup.policy=delete \
+          -c retention.ms=604800000 \
+          -c compression.type=zstd \
+          -c min.insync.replicas=1 \
+          exchangeos.compliance.events || true
+
+        # Refdata feed — compacted, retention 1d
+        rpk topic create -X brokers=$$BROKER \
+          --partitions $$PARTS --replicas $$RF \
+          -c cleanup.policy=compact \
+          -c retention.ms=86400000 \
+          -c compression.type=zstd \
+          -c min.insync.replicas=1 \
+          exchangeos.refdata.spot_rates || true
+
+        # PTAX — compacted, no retention cap (daily fixings)
+        rpk topic create -X brokers=$$BROKER \
+          --partitions $$PARTS --replicas $$RF \
+          -c cleanup.policy=compact \
+          -c compression.type=zstd \
+          -c min.insync.replicas=1 \
+          exchangeos.refdata.ptax || true
+
+        echo ""
+        echo "═══ Final topic catalogue ═══"
+        rpk topic list -X brokers=$$BROKER
+    restart: "no"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.115.1
+    container_name: exchangeos-otel
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ../otel-collector/config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+
+  exchangeos-api:
+    build:
+      context: ../..
+      dockerfile: docker/api/Dockerfile
+      args:
+        VERSION: dev
+        COMMIT: local
+    container_name: exchangeos-api
+    depends_on:
+      grant-app:
+        condition: service_completed_successfully
+      kafka-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    environment:
+      EXCHANGEOS_ENV: dev
+      EXCHANGEOS_HTTP_PORT: "8094"
+      EXCHANGEOS_GRPC_PORT: "9094"
+      EXCHANGEOS_DB_DSN: postgres://exchangeos_app@crdb:26257/exchangeos?sslmode=disable
+      EXCHANGEOS_REPO_BACKEND: postgres
+      EXCHANGEOS_ENABLE_ADMIN_API: "true"   # local dev only — production gates this off
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+    ports:
+      - "8094:8094"
+      - "9094:9094"
+    healthcheck:
+      # distroless/static has no shell + no wget/curl, so we ship a tiny standalone
+      # /app/healthcheck binary that GETs /healthz. See cmd/healthcheck/main.go.
+      test: ["CMD", "/app/healthcheck", "http://localhost:8094/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+  exchangeos-worker:
+    # Outbox dispatch loop. Built with `-tags kafka` → franz-go publisher.
+    # Consumes outbox_events (postgres) and publishes to the topics defined in
+    # kafka-init. Idle if EXCHANGEOS_REPO_BACKEND != postgres.
+    build:
+      context: ../..
+      dockerfile: docker/worker/Dockerfile
+      args:
+        VERSION: dev
+        COMMIT: local
+    container_name: exchangeos-worker
+    depends_on:
+      grant-app:
+        condition: service_completed_successfully
+      kafka-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    environment:
+      EXCHANGEOS_ENV: dev
+      EXCHANGEOS_DB_DSN: postgres://exchangeos_app@crdb:26257/exchangeos?sslmode=disable
+      EXCHANGEOS_REPO_BACKEND: postgres
+      EXCHANGEOS_KAFKA_BROKERS: kafka:9092
+      EXCHANGEOS_KAFKA_CLIENT_ID: exchangeos-worker
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+    restart: unless-stopped
+
+volumes:
+  crdb-data:

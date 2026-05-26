@@ -1,0 +1,20 @@
+{{- if and .Values.binaries.api.enabled .Values.binaries.api.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Release.Name }}-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Release.Name }}-api
+  minReplicas: {{ .Values.binaries.api.hpa.minReplicas }}
+  maxReplicas: {{ .Values.binaries.api.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.binaries.api.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

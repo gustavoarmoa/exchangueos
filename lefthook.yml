@@ -1,0 +1,71 @@
+# ExchangeOS — Lefthook HARD-enforcement (FX-COMMIT-001..025)
+# 3 tiers:
+#   pre-commit  < 30s  (Tier 1 — fast feedback)
+#   pre-push    < 3min (Tier 2 — confidence)
+#   pre-merge   <15min (Tier 3 — full coverage; runs via CI only)
+#
+# Bypass: scripts/git-hooks-wrapper.sh blocks --no-verify; EMERGENCY_BYPASS=true
+# requires reason + appends to .git/audit-bypass.log + Slack alert.
+
+assert_lefthook_installed: true
+no_tty: false
+skip_output:
+  - meta
+  - success
+
+# ─── Tier 1: pre-commit (< 30s) ─────────────────────────────────────────────
+pre-commit:
+  parallel: true
+  commands:
+    fmt:
+      glob: "*.go"
+      run: gofmt -l -s {staged_files} | tee /tmp/_exos_fmt && test ! -s /tmp/_exos_fmt
+      fail_text: "gofmt found unformatted files (run: task fmt)"
+
+    vet:
+      glob: "*.go"
+      run: go vet ./...
+
+    secrets:
+      run: gitleaks protect --staged --redact --no-banner
+      fail_text: "gitleaks detected potential secrets — see output above"
+
+    proto-lint:
+      glob: "*.proto"
+      run: buf lint
+
+    yaml-lint:
+      glob: "*.{yaml,yml}"
+      run: |
+        if command -v yamllint >/dev/null 2>&1; then
+          yamllint -d "{extends: default, rules: {line-length: {max: 200}, document-start: disable, truthy: {check-keys: false}}}" {staged_files}
+        else
+          echo "(yamllint not installed — skipping)"
+        fi
+
+# ─── Tier 2: pre-push (< 3min) ───────────────────────────────────────────────
+pre-push:
+  parallel: false
+  commands:
+    unit-tests:
+      run: go test -race -count=1 -short ./...
+      fail_text: "Unit tests failed — fix before pushing"
+
+    lint:
+      run: golangci-lint run ./...
+
+    govulncheck:
+      run: |
+        if command -v govulncheck >/dev/null 2>&1; then
+          govulncheck ./...
+        else
+          echo "(govulncheck not installed — install: go install golang.org/x/vuln/cmd/govulncheck@latest)"
+        fi
+
+# ─── commit-msg: Conventional Commits enforcement ───────────────────────────
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        head -n1 "{1}" | grep -E '^(feat|fix|chore|docs|refactor|test|perf|ci|build|revert)(\(.+\))?!?: .+' >/dev/null \
+          || (echo "Commit subject must follow Conventional Commits (e.g. 'feat(trade): ...')"; exit 1)

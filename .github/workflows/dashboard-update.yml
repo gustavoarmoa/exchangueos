@@ -1,0 +1,44 @@
+name: Delivery Dashboard Auto-Update
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # hourly
+  workflow_dispatch:
+  push:
+    paths:
+      - '.base/plans/milestones/**'
+      - '.base/plans/version.md'
+
+jobs:
+  update-dashboard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run dashboard generator
+        run: |
+          chmod +x .claude/scripts/generate-delivery-dashboard.sh
+          .claude/scripts/generate-delivery-dashboard.sh
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .base/plans/roadmap/delivery-dashboard.md .base/plans/00-governance/audits/
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(dashboard): auto-update delivery dashboard"
+            git push
+          else
+            echo "No changes to dashboard"
+          fi

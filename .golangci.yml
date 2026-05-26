@@ -1,0 +1,88 @@
+# ExchangeOS — golangci-lint config (FX-GP-040)
+# Strict by default; explicit excludes only where noisy.
+
+version: "2"
+
+run:
+  timeout: 5m
+  go: "1.25"
+  build-tags:
+    - integration
+    - e2e
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gosec
+    - revive
+    - misspell
+    - gocyclo
+    - dupl
+    - goconst
+    - prealloc
+    - gocritic
+    - bodyclose
+    - noctx
+    - nilerr
+    - exhaustive
+    - errorlint
+    - copyloopvar
+    - intrange
+    - sqlclosecheck
+    - rowserrcheck
+    - asasalint
+    - asciicheck
+    - durationcheck
+    - errchkjson
+    - forbidigo
+    - gocheckcompilerdirectives
+    - gosmopolitan
+
+  settings:
+    gocyclo:
+      min-complexity: 15
+    revive:
+      severity: warning
+      rules:
+        - name: var-naming
+        - name: exported
+        - name: package-comments
+        - name: indent-error-flow
+        - name: range-val-in-closure
+        - name: unhandled-error
+          arguments:
+            - "fmt.Println"
+            - "fmt.Printf"
+    gosec:
+      excludes:
+        - G115  # integer overflow (false positives w/ proto sizes)
+    forbidigo:
+      forbid:
+        - pattern: '^float64\s+'
+          msg: "NEVER float64 for money/rate — use shopspring/decimal.Decimal"
+        - pattern: '^float32\s+'
+          msg: "NEVER float32 for money/rate — use shopspring/decimal.Decimal"
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - dupl
+          - gocyclo
+          - errcheck
+      - path: proto/gen/
+        linters:
+          - revive
+          - unused
+          - staticcheck
+          - gosec
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

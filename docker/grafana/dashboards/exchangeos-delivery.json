@@ -1,0 +1,180 @@
+{
+  "$schema": "https://schemas.getgrafana.com/dashboard/dashboard.schema.json",
+  "uid": "exchangeos-delivery",
+  "title": "ExchangeOS — Delivery Dashboard",
+  "description": "Real-time delivery tracking: milestones progress + velocity + health + DORA + SLI/SLO + cost savings",
+  "tags": ["exchangeos", "delivery", "executive"],
+  "timezone": "America/Sao_Paulo",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": { "from": "now-90d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "% Delivered",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+      "targets": [{
+        "expr": "exchangeos_milestones_delivered_total / exchangeos_milestones_total * 100",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 25, "color": "yellow"},
+              {"value": 75, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Active Milestones",
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 4},
+      "targets": [{ "expr": "exchangeos_milestones_active", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "yellow"},
+              {"value": 1, "color": "green"},
+              {"value": 3, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Current Sprint",
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 4},
+      "targets": [{ "expr": "exchangeos_current_sprint", "refId": "A" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Days to ISO 27001 Audit",
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 4},
+      "targets": [{ "expr": "exchangeos_days_to_iso27001_audit", "refId": "A" }]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Open Questions",
+      "gridPos": {"x": 16, "y": 0, "w": 4, "h": 4},
+      "targets": [{ "expr": "exchangeos_open_questions_total", "refId": "A" }]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Health",
+      "gridPos": {"x": 20, "y": 0, "w": 4, "h": 4},
+      "targets": [{ "expr": "exchangeos_health_score", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "value": "0", "text": "🔴 BLOCKED"},
+            {"type": "value", "value": "1", "text": "🟡 AT RISK"},
+            {"type": "value", "value": "2", "text": "🟢 ON TRACK"}
+          ]
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "barchart",
+      "title": "Milestones Burndown (cumulative delivered)",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "exchangeos_milestones_delivered_total",
+        "refId": "A",
+        "legendFormat": "Delivered"
+      }]
+    },
+    {
+      "id": 11,
+      "type": "barchart",
+      "title": "Velocity per Sprint (milestones/sprint)",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "rate(exchangeos_milestones_delivered_total[14d])",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "DORA Metrics",
+      "gridPos": {"x": 0, "y": 12, "w": 24, "h": 1}
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "Deployment Frequency",
+      "gridPos": {"x": 0, "y": 13, "w": 6, "h": 4},
+      "targets": [{ "expr": "rate(exchangeos_deploys_total[7d])", "refId": "A" }],
+      "fieldConfig": {"defaults": {"unit": "ops"}}
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Lead Time (avg)",
+      "gridPos": {"x": 6, "y": 13, "w": 6, "h": 4},
+      "targets": [{ "expr": "exchangeos_lead_time_hours_avg", "refId": "A" }],
+      "fieldConfig": {"defaults": {"unit": "h"}}
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "MTTR (avg)",
+      "gridPos": {"x": 12, "y": 13, "w": 6, "h": 4},
+      "targets": [{ "expr": "exchangeos_mttr_hours_avg", "refId": "A" }],
+      "fieldConfig": {"defaults": {"unit": "h"}}
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Change Failure Rate",
+      "gridPos": {"x": 18, "y": 13, "w": 6, "h": 4},
+      "targets": [{ "expr": "exchangeos_change_failure_rate_pct", "refId": "A" }],
+      "fieldConfig": {"defaults": {"unit": "percent"}}
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "Cost Savings",
+      "gridPos": {"x": 0, "y": 17, "w": 24, "h": 1}
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "GitHub Actions Minutos Saved (weekly)",
+      "gridPos": {"x": 0, "y": 18, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "increase(exchangeos_local_hooks_runs_total[7d]) * 3",
+        "refId": "A",
+        "legendFormat": "Minutos saved"
+      }]
+    },
+    {
+      "id": 32,
+      "type": "stat",
+      "title": "$ Saved YTD (lefthook local pre-commit)",
+      "gridPos": {"x": 12, "y": 18, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "exchangeos_cost_saved_usd_ytd",
+        "refId": "A"
+      }],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    }
+  ]
+}

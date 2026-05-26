@@ -1,0 +1,4 @@
+BEGIN;
+DROP TABLE IF EXISTS netting_cutoffs CASCADE;
+DROP TABLE IF EXISTS currency_pairs CASCADE;
+COMMIT;

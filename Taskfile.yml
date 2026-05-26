@@ -1,0 +1,330 @@
+version: '3'
+
+# ExchangeOS — Primary cross-platform task runner (taskfile.dev)
+# Mirror via Makefile delegation + PowerShell scripts (FX-XOS-* patterns).
+
+vars:
+  MODULE: github.com/revenu-tech/exchangeos
+  GO_VERSION: 1.25.1
+  HTTP_PORT: 8094
+  GRPC_PORT: 9094
+  CRDB_HUB: cockroachdb/modules/exchangeos
+  IMAGE_REGISTRY: gcr.io/revenu-platform
+  IMAGE_TAG:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "dev"
+
+env:
+  CGO_ENABLED: '0'
+  GOFLAGS: '-mod=readonly'
+
+tasks:
+
+  default:
+    cmds:
+      - task --list-all
+
+  # ─────────────────────────────────────────────────────────────
+  # Bootstrap
+  # ─────────────────────────────────────────────────────────────
+  install:
+    desc: Install Go toolchain dependencies (buf, lefthook, golangci-lint)
+    cmds:
+      - go install github.com/bufbuild/buf/cmd/buf@latest
+      - go install github.com/evilmartians/lefthook@latest
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+      - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+      - lefthook install
+      - cp -n .env.example .env || true
+
+  tidy:
+    desc: Tidy go.mod
+    cmds:
+      - go mod tidy
+
+  # ─────────────────────────────────────────────────────────────
+  # Proto / Buf
+  # ─────────────────────────────────────────────────────────────
+  proto:lint:
+    desc: Lint proto files
+    cmds:
+      - buf lint
+
+  proto:gen:
+    desc: Generate Go code from proto contracts
+    cmds:
+      - buf generate
+
+  proto:breaking:
+    desc: Detect breaking changes vs main
+    cmds:
+      - buf breaking --against '.git#branch=main'
+
+  # ─────────────────────────────────────────────────────────────
+  # Build
+  # ─────────────────────────────────────────────────────────────
+  build:
+    desc: Build all 7 binaries
+    cmds:
+      - task: build:api
+      - task: build:worker
+      - task: build:migrator
+      - task: build:cls-cycle
+      - task: build:eod
+      - task: build:mq-bridge
+      - task: build:cred-rotator
+
+  build:api:
+    cmds:
+      - go build -trimpath -ldflags '-s -w' -o bin/exchangeos-api ./cmd/api
+
+  build:worker:
+    cmds:
+      - go build -trimpath -ldflags '-s -w' -o bin/exchangeos-worker ./cmd/worker
+
+  build:migrator:
+    cmds:
+      - go build -trimpath -ldflags '-s -w' -o bin/exchangeos-migrator ./cmd/migrator
+
+  build:cls-cycle:
+    cmds:
+      - go build -trimpath -ldflags '-s -w' -o bin/exchangeos-cls-cycle ./cmd/cls-cycle
+
+  build:eod:
+    cmds:
+      - go build -trimpath -ldflags '-s -w' -o bin/exchangeos-eod ./cmd/eod
+
+  build:mq-bridge:
+    cmds:
+      - go build -trimpath -ldflags '-s -w' -o bin/exchangeos-mq-bridge ./cmd/mq-bridge
+
+  build:cred-rotator:
+    cmds:
+      - go build -trimpath -ldflags '-s -w' -o bin/exchangeos-cred-rotator ./cmd/cred-rotator
+
+  # ─────────────────────────────────────────────────────────────
+  # Run (local)
+  # ─────────────────────────────────────────────────────────────
+  run:api:
+    desc: Run API server (HTTP :8094 + gRPC :9094)
+    deps: [build:api]
+    cmds:
+      - ./bin/exchangeos-api
+
+  run:worker:
+    deps: [build:worker]
+    cmds:
+      - ./bin/exchangeos-worker
+
+  # ─────────────────────────────────────────────────────────────
+  # Test (TDD Red-Green-Refactor)
+  # ─────────────────────────────────────────────────────────────
+  test:
+    desc: Run all tests with race detector + coverage
+    cmds:
+      - go test -race -count=1 -coverprofile=coverage.out ./...
+
+  test:unit:
+    cmds:
+      - go test -race -count=1 -short ./...
+
+  test:integration:
+    desc: Integration tests against shared CRDB hub TLS
+    cmds:
+      - go test -race -count=1 -tags=integration ./tests/integration/...
+
+  test:e2e:
+    desc: 10 canonical E2E scenarios
+    cmds:
+      - go test -race -count=1 -tags=e2e -timeout=15m ./tests/e2e/...
+
+  test:cover:
+    desc: Coverage HTML
+    cmds:
+      - go tool cover -html=coverage.out -o coverage.html
+
+  # ─────────────────────────────────────────────────────────────
+  # Quality gates (HARD enforcement — Tiered)
+  # ─────────────────────────────────────────────────────────────
+  lint:
+    desc: golangci-lint full suite
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    cmds:
+      - gofmt -w -s .
+      - go mod tidy
+
+  vet:
+    cmds:
+      - go vet ./...
+
+  # ─────────────────────────────────────────────────────────────
+  # Security gates (30 local gates: 9 pre-commit + 13 pre-push + 11 pre-merge)
+  # ─────────────────────────────────────────────────────────────
+  sec:secrets:
+    desc: Gitleaks secret scan
+    cmds:
+      - gitleaks detect --no-banner --redact
+
+  sec:trivy:
+    desc: Trivy vulnerability scan
+    cmds:
+      - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+
+  sec:govulncheck:
+    desc: Go vulncheck (CVE)
+    cmds:
+      - govulncheck ./...
+
+  sec:cosign:
+    desc: Cosign keyless verify (SLSA L3)
+    cmds:
+      - cosign verify --certificate-identity-regexp '.*' --certificate-oidc-issuer-regexp '.*' "{{.IMAGE_REGISTRY}}/exchangeos-api:{{.IMAGE_TAG}}"
+
+  # ─────────────────────────────────────────────────────────────
+  # Database (CockroachDB shared hub TLS — NEVER inline --insecure)
+  # ─────────────────────────────────────────────────────────────
+  db:up:
+    desc: Start CRDB via shared hub
+    cmds:
+      - cd {{.CRDB_HUB}} && task up
+
+  db:migrate:
+    desc: Run migrations 000001-000020
+    deps: [build:migrator]
+    cmds:
+      - ./bin/exchangeos-migrator up
+
+  db:seed:
+    desc: Load seed data
+    cmds:
+      - ./bin/exchangeos-migrator seed
+
+  db:reset:
+    desc: Reset CRDB (destructive — requires CONFIRM=yes)
+    cmds:
+      - test "$CONFIRM" = "yes" || (echo "Aborted: set CONFIRM=yes"; exit 1)
+      - cd {{.CRDB_HUB}} && task reset
+
+  # ─────────────────────────────────────────────────────────────
+  # Docker / Compose
+  # ─────────────────────────────────────────────────────────────
+  docker:build:
+    desc: Build all 7 distroless images multi-arch
+    cmds:
+      - docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMAGE_REGISTRY}}/exchangeos-api:{{.IMAGE_TAG}} -f docker/api/Dockerfile .
+
+  compose:up:
+    desc: Start local stack (CRDB + Kafka + OTel + ExchangeOS)
+    cmds:
+      - docker compose -f docker/compose/docker-compose.yml up -d
+
+  compose:down:
+    cmds:
+      - docker compose -f docker/compose/docker-compose.yml down
+
+  compose:logs:
+    cmds:
+      - docker compose -f docker/compose/docker-compose.yml logs -f
+
+  # ─────────────────────────────────────────────────────────────
+  # Observability
+  # ─────────────────────────────────────────────────────────────
+  otel:up:
+    cmds:
+      - docker compose -f docker/compose/docker-compose.otel.yml up -d
+
+  # ─────────────────────────────────────────────────────────────
+  # Production canary ops (Argo Rollouts proxies)
+  # ─────────────────────────────────────────────────────────────
+  canary:status:
+    desc: Show current Argo Rollouts status for exchangeos-api
+    cmds:
+      - kubectl argo rollouts get rollout exchangeos-api -n exchangeos --watch=false
+
+  canary:promote:
+    desc: Manually promote the next canary step (gates between weight changes)
+    cmds:
+      - kubectl argo rollouts promote exchangeos-api -n exchangeos
+
+  canary:abort:
+    desc: Abort the current rollout (preserves stable revision)
+    cmds:
+      - kubectl argo rollouts abort exchangeos-api -n exchangeos
+
+  canary:rollback:
+    desc: Roll back to the previous stable revision (post-abort)
+    cmds:
+      - kubectl argo rollouts undo exchangeos-api -n exchangeos
+
+  # ─────────────────────────────────────────────────────────────
+  # Smoke + load
+  # ─────────────────────────────────────────────────────────────
+  smoke:prod:
+    desc: Run production smoke checks against EXCHANGEOS_BASE_URL
+    cmds:
+      - bash scripts/smoke-prod.sh
+
+  load:trade-book:
+    desc: k6 sustained-load test (1m warmup + 10min sustained, see thresholds in file)
+    cmds:
+      - k6 run tests/load/k6-trade-book.js
+
+  audit:bundle:
+    desc: Pack ISO 27001 evidence into a timestamped tarball for auditor handoff
+    cmds:
+      - bash scripts/audit-evidence-bundle.sh
+
+  # ─────────────────────────────────────────────────────────────
+  # ISO 20022 XSDs (32 schemas pinned in pkg/iso20022/registry/sources.go)
+  # ─────────────────────────────────────────────────────────────
+  xsd:download:
+    desc: Pull all 32 pinned ISO 20022 XSDs into .cache/xsd/
+    cmds:
+      - bash scripts/download-xsd.sh
+
+  xsd:verify:
+    desc: Verify .cache/xsd/ matches manifest (OFFLINE — no network)
+    cmds:
+      - OFFLINE=true bash scripts/download-xsd.sh
+
+  # ─────────────────────────────────────────────────────────────
+  # Delivery dashboard
+  # ─────────────────────────────────────────────────────────────
+  dash-update:
+    desc: Auto-update delivery dashboard
+    cmds:
+      - bash .claude/scripts/generate-delivery-dashboard.sh
+
+  # ─────────────────────────────────────────────────────────────
+  # Tiered hooks (called by lefthook)
+  # ─────────────────────────────────────────────────────────────
+  hooks:pre-commit:
+    desc: Tier 1 < 30s (fmt + vet + lint changed + secrets)
+    cmds:
+      - task: fmt
+      - task: vet
+      - task: sec:secrets
+
+  hooks:pre-push:
+    desc: Tier 2 < 3min (unit + lint + govulncheck)
+    cmds:
+      - task: test:unit
+      - task: lint
+      - task: sec:govulncheck
+
+  hooks:pre-merge:
+    desc: Tier 3 < 15min (full test + e2e + trivy + cosign)
+    cmds:
+      - task: test
+      - task: test:integration
+      - task: sec:trivy
+
+  # ─────────────────────────────────────────────────────────────
+  # Clean
+  # ─────────────────────────────────────────────────────────────
+  clean:
+    cmds:
+      - rm -rf bin/ coverage.out coverage.html dist/
