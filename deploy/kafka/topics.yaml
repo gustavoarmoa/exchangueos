@@ -97,3 +97,25 @@ acls:
   exchangeos-mq-bridge:
     produce: [exchangeos.trade.events]   # SWIFT MT in → fxtr out
     consume: []
+  # wssgateway is a downstream fanout service (Revenu Platform WebSocket gateway).
+  # CONSUME-ONLY across all 14 ExchangeOS topics — multiplexes events to
+  # connected WSS clients under /ws/exchange/*. Never produces back upstream.
+  # Wire: wssgateway/src/internal/consumer/exchange_topics.go +
+  #       wssgateway PR #39 merged at 2026-05-26.
+  wssgateway:
+    produce: []
+    consume:
+      - exchangeos.trade.events
+      - exchangeos.quote.events
+      - exchangeos.cls_settlement.events
+      - exchangeos.payin.events
+      - exchangeos.netreport.events
+      - exchangeos.cfets_capture.events
+      - exchangeos.cfets_confirmation.events
+      - exchangeos.risk.events
+      - exchangeos.position.events
+      - exchangeos.admin.system_events
+      - exchangeos.admin.eod_jobs
+      - exchangeos.compliance.events
+      - exchangeos.refdata.spot_rates
+      - exchangeos.refdata.ptax
