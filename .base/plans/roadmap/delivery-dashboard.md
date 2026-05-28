@@ -14,7 +14,7 @@
 ├──────────────────────────────────────────────────────────────────┤
 │  Overall:      █████████████░░░░░░░  66% delivered (26/39 MS)     │
 │  This sprint:  See active/ milestones                            │
-│  Velocity:     Commits 7d: 38 │ 30d: 38                          │
+│  Velocity:     Commits 7d: 39 │ 30d: 39                          │
 │  Health:       🟢 ON TRACK                          │
 │  Last update:  2026-05-28                                          │
 └──────────────────────────────────────────────────────────────────┘
