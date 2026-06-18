@@ -42,9 +42,11 @@ import (
 
 	netapp "github.com/revenu-tech/exchangeos/modules/netreport/application"
 	netmem "github.com/revenu-tech/exchangeos/modules/netreport/infrastructure/memory"
+	netpg "github.com/revenu-tech/exchangeos/modules/netreport/infrastructure/postgres"
 
 	payapp "github.com/revenu-tech/exchangeos/modules/payin/application"
 	paymem "github.com/revenu-tech/exchangeos/modules/payin/infrastructure/memory"
+	paypg "github.com/revenu-tech/exchangeos/modules/payin/infrastructure/postgres"
 
 	posapp "github.com/revenu-tech/exchangeos/modules/position/application"
 	posmem "github.com/revenu-tech/exchangeos/modules/position/infrastructure/memory"
@@ -58,15 +60,19 @@ import (
 
 	adminapp "github.com/revenu-tech/exchangeos/modules/admin/application"
 	adminmem "github.com/revenu-tech/exchangeos/modules/admin/infrastructure/memory"
+	adminpg "github.com/revenu-tech/exchangeos/modules/admin/infrastructure/postgres"
 
 	complapp "github.com/revenu-tech/exchangeos/modules/compliance/application"
 	complmem "github.com/revenu-tech/exchangeos/modules/compliance/infrastructure/memory"
+	complpg "github.com/revenu-tech/exchangeos/modules/compliance/infrastructure/postgres"
 
 	cfcapapp "github.com/revenu-tech/exchangeos/modules/cfets_capture/application"
 	cfcapmem "github.com/revenu-tech/exchangeos/modules/cfets_capture/infrastructure/memory"
+	cfcappg "github.com/revenu-tech/exchangeos/modules/cfets_capture/infrastructure/postgres"
 
 	cfconapp "github.com/revenu-tech/exchangeos/modules/cfets_confirmation/application"
 	cfconmem "github.com/revenu-tech/exchangeos/modules/cfets_confirmation/infrastructure/memory"
+	cfconpg "github.com/revenu-tech/exchangeos/modules/cfets_confirmation/infrastructure/postgres"
 
 	"github.com/revenu-tech/exchangeos/pkg/bacen"
 )
@@ -293,24 +299,42 @@ func (c *Container) wirePostgres(pool *pgxpool.Pool) {
 	c.wireSettlementPostgres(pool)
 }
 
-// wireSettlementPostgres uses postgres-backed repos for cls_settlement + risk + position;
-// payin + netreport still in-memory (their postgres impls land with MS-023g).
+// wireSettlementPostgres uses postgres-backed repos for cls_settlement + payin +
+// netreport + risk + position. Publishers stay on memory-noop until Kafka outbox
+// lands (separate workstream).
 func (c *Container) wireSettlementPostgres(pool *pgxpool.Pool) {
 	cycleRepo := clspg.NewCycleRepo(pool)
 	clsPub := clsmem.NewNoopPublisher()
 	c.Settlement = clsapp.NewService(cycleRepo, clsPub)
 
-	payRepo := paymem.NewRepo()
+	payRepo := paypg.NewPayInRepo(pool)
 	payPub := paymem.NewNoopPublisher()
 	c.PayIn = payapp.NewService(payRepo, payPub)
 
-	netRepo := netmem.NewRepo()
+	netRepo := netpg.NewNetReportRepo(pool)
 	c.NetReport = netapp.NewService(netRepo)
 
 	c.Risk = riskapp.NewService(riskpg.NewLimitRepo(pool))
 	c.Position = posapp.NewService(pospg.NewPositionRepo(pool))
 
-	c.wireComplianceAdmin()
+	c.wireComplianceAdminPostgres(pool)
+}
+
+// wireComplianceAdminPostgres mirrors wireComplianceAdmin but with postgres-backed
+// repos for compliance + admin + cfets (both BCs).
+func (c *Container) wireComplianceAdminPostgres(pool *pgxpool.Pool) {
+	c.Compliance = complapp.NewService(
+		bacen.NewClassifier(),
+		bacen.NewIOFCalculator(),
+		complpg.NewClassificationRepo(pool),
+		complpg.NewIOFRepo(pool),
+		complpg.NewReportRepo(pool),
+		complpg.NewScreeningRepo(pool),
+	)
+	c.Admin = adminapp.NewService(adminpg.NewEventRepo(pool), adminpg.NewEODJobRepo(pool))
+
+	c.CFETSCapture = cfcapapp.NewService(cfcappg.NewCFETSCaptureRepo(pool), cfcapmem.NewNoopPublisher())
+	c.CFETSConfirmation = cfconapp.NewService(cfconpg.NewCFETSConfirmationRepo(pool), cfconmem.NewNoopPublisher())
 }
 
 // stubPricing was removed in 4.9.0 — Container now uses refdata/infrastructure/pricing.Engine
