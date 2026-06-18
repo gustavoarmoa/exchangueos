@@ -26,9 +26,20 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/revenu-tech/exchangeos/internal/erasure"
+)
+
+// Required approver roles for --execute. Matches the AC for MS-024a:
+//   EXCHANGEOS_ERASURE_APPROVERS=dpo,compliance_officer
+const (
+	roleDPO        = "dpo"
+	roleCompliance = "compliance_officer"
 )
 
 func main() {
@@ -87,39 +98,129 @@ func run() error {
 	if !plan.HasRequiredApprovals() {
 		return fmt.Errorf("plan lacks required approvals (need both 'dpo' AND 'compliance_officer')")
 	}
+	if err := checkApproverEnv(); err != nil {
+		return err
+	}
 	if os.Getenv("EXCHANGEOS_ERASURE_CONFIRM") != "YES-I-MEAN-IT" {
 		return fmt.Errorf("EXCHANGEOS_ERASURE_CONFIRM=YES-I-MEAN-IT required for --execute")
 	}
 
-	// Stage 2 wiring: Executor + AuditEmitter are implemented (see internal/erasure)
-	// but the concrete DB + audit adapters are MS-024a Stage 3 (CRDB pgx adapter +
-	// audit_event emit via modules/admin + outbox event publisher).
-	//
-	// Until those land, --execute remains explicitly disabled in the binary —
-	// preventing accidental "looks ready" misuse. The Executor itself is fully
-	// tested with a fake DB; once the adapters exist this branch becomes:
-	//
-	//   db := pgxadapter.New(ctx, cfg.DBDsn)
-	//   audit := admindapter.New(ctx, cfg.AdminEndpoint)
-	//   exec := erasure.NewExecutor(db, audit)
-	//   res, err := exec.Apply(ctx, plan)
-	//   slog.Info("erasure-worker: applied", "ops", len(res.Ops), "rows", res.RowsTotal)
-	return fmt.Errorf("execute path needs DB + audit adapters (MS-024a Stage 3); executor itself is ready")
+	dsn := os.Getenv("EXCHANGEOS_DB_DSN")
+	if dsn == "" {
+		return fmt.Errorf("EXCHANGEOS_DB_DSN required for --execute")
+	}
+	operatorTenant, err := operatorTenantFromEnv()
+	if err != nil {
+		return err
+	}
+
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		return fmt.Errorf("open db: %w", err)
+	}
+	defer pool.Close()
+	if err := pool.Ping(ctx); err != nil {
+		return fmt.Errorf("ping db: %w", err)
+	}
+
+	exec := erasure.NewExecutor(
+		erasure.NewPgxDB(pool),
+		erasure.NewPgxAudit(pool, operatorTenant),
+	)
+	res, err := exec.Apply(ctx, plan)
+	if err != nil {
+		slog.Error("erasure-worker: apply failed",
+			"ticket", plan.Ticket, "ops_done", len(res.Ops), "rows_done", res.RowsTotal, "err", err)
+		return err
+	}
+	slog.Info("erasure-worker: applied",
+		"ticket", plan.Ticket, "ops", len(res.Ops), "rows", res.RowsTotal)
+	return nil
 }
 
-// dryRunPlan prints what each operation would do. Safe — no DB write.
-func dryRunPlan(_ context.Context, plan *erasure.Plan) error {
+// checkApproverEnv parses EXCHANGEOS_ERASURE_APPROVERS as a comma-separated
+// list and refuses execute unless both required roles are present. This is a
+// belt-and-braces check on top of plan.HasRequiredApprovals — operators can
+// deliberately withhold the env var to block --execute even when a fully-
+// approved plan is on disk.
+func checkApproverEnv() error {
+	raw := os.Getenv("EXCHANGEOS_ERASURE_APPROVERS")
+	if raw == "" {
+		return fmt.Errorf("EXCHANGEOS_ERASURE_APPROVERS env var required for --execute (e.g. 'dpo,compliance_officer')")
+	}
+	have := map[string]bool{}
+	for _, a := range strings.Split(raw, ",") {
+		have[strings.ToLower(strings.TrimSpace(a))] = true
+	}
+	if !have[roleDPO] || !have[roleCompliance] {
+		return fmt.Errorf("EXCHANGEOS_ERASURE_APPROVERS must contain both %q and %q (got %q)",
+			roleDPO, roleCompliance, raw)
+	}
+	return nil
+}
+
+// operatorTenantFromEnv parses EXCHANGEOS_OPERATOR_TENANT_ID. The audit_events
+// + outbox_events rows both carry NOT NULL tenant_id; this is the tenant under
+// whose name the regulatory action was taken (typically the platform tenant).
+func operatorTenantFromEnv() (uuid.UUID, error) {
+	raw := os.Getenv("EXCHANGEOS_OPERATOR_TENANT_ID")
+	if raw == "" {
+		return uuid.Nil, fmt.Errorf("EXCHANGEOS_OPERATOR_TENANT_ID required for --execute")
+	}
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("EXCHANGEOS_OPERATOR_TENANT_ID parse: %w", err)
+	}
+	return id, nil
+}
+
+// dryRunPlan prints the SQL each op would issue + the row count it would
+// affect. Read-only — never mutates. When EXCHANGEOS_DB_DSN is set the DSN is
+// used to issue `SELECT count(*) FROM <table> WHERE <where>` per op so the
+// operator gets a precise blast-radius preview; without it the SQL is still
+// printed (useful for offline plan review).
+func dryRunPlan(ctx context.Context, plan *erasure.Plan) error {
+	var pool *pgxpool.Pool
+	if dsn := os.Getenv("EXCHANGEOS_DB_DSN"); dsn != "" {
+		p, err := pgxpool.New(ctx, dsn)
+		if err != nil {
+			return fmt.Errorf("open db (dry-run): %w", err)
+		}
+		defer p.Close()
+		if err := p.Ping(ctx); err != nil {
+			return fmt.Errorf("ping db (dry-run): %w", err)
+		}
+		pool = p
+	}
+
 	fmt.Printf("\n=== DRY RUN — ticket %s ===\n\n", plan.Ticket)
+	var totalRows int64
 	for i, op := range plan.Operations {
-		switch op.Op {
-		case erasure.OpRedact:
-			fmt.Printf("[%d] REDACT %s SET (%v) = '%s' WHERE %s\n",
-				i+1, op.Table, op.Fields, plan.RedactionMarker(), op.Where)
-		case erasure.OpHardDelete:
-			fmt.Printf("[%d] DELETE FROM %s WHERE %s\n", i+1, op.Table, op.Where)
+		sql := erasure.BuildSQL(plan, op)
+		fmt.Printf("[%d] %s\n", i+1, sql)
+		if pool != nil {
+			n, err := countAffected(ctx, pool, op)
+			if err != nil {
+				return fmt.Errorf("op[%d] count: %w", i, err)
+			}
+			fmt.Printf("    → would affect %d row(s)\n", n)
+			totalRows += n
 		}
 	}
-	fmt.Printf("\n=== END DRY RUN (%d ops) ===\n\n", len(plan.Operations))
-	slog.Info("erasure-worker: dry-run complete", "operations", len(plan.Operations))
+	fmt.Printf("\n=== END DRY RUN (%d ops, %d rows total) ===\n\n",
+		len(plan.Operations), totalRows)
+	slog.Info("erasure-worker: dry-run complete",
+		"operations", len(plan.Operations), "rows_estimated", totalRows)
 	return nil
+}
+
+// countAffected runs `SELECT count(*) FROM <table> WHERE <where>` against the
+// pool — never mutates. Read-only by construction.
+func countAffected(ctx context.Context, pool *pgxpool.Pool, op erasure.Operation) (int64, error) {
+	q := fmt.Sprintf("SELECT count(*) FROM %s WHERE %s", op.Table, op.Where)
+	var n int64
+	if err := pool.QueryRow(ctx, q).Scan(&n); err != nil {
+		return 0, err
+	}
+	return n, nil
 }

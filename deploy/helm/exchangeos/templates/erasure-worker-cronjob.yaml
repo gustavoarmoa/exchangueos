@@ -1,0 +1,86 @@
+{{- if .Values.binaries.erasureWorker.enabled }}
+# erasure-worker — LGPD Art. 18 IV right-to-erasure executor.
+#
+# IMPORTANT: this CronJob is intentionally `suspend: true` and pinned to a date
+# that will never fire on its own (Feb 31 — invalid). It exists only as a
+# template the on-call team triggers by hand via:
+#
+#   kubectl create job --from=cronjob/erasure-worker \
+#     erasure-LGPD-<ticket> -n exchangeos -- \
+#     /bin/erasure-worker --ticket LGPD-YYYY-NNNN \
+#         --plan /etc/erasure-plan/plan.json --execute
+#
+# Plan + approvals are mounted from a per-request Secret (created by DPO ops
+# during Stage 3 of docs/security/data-lifecycle/erasure-workflow.md).
+{{- $binaryName := "erasure-worker" -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "exchangeos.fullname" (dict "Release" .Release "binaryName" $binaryName) }}
+  labels: {{- include "exchangeos.labels" (dict "Release" .Release "binaryName" $binaryName) | nindent 4 }}
+  annotations:
+    "exchangeos.revenu.tech/manual-trigger-only": "true"
+    "exchangeos.revenu.tech/run-via": "kubectl create job --from=cronjob/erasure-worker"
+spec:
+  suspend: true
+  schedule: "0 0 31 2 *"       # invalid date — won't ever fire
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ .Values.binaries.erasureWorker.history.success | default 30 }}
+  failedJobsHistoryLimit: {{ .Values.binaries.erasureWorker.history.failed | default 30 }}
+  jobTemplate:
+    spec:
+      backoffLimit: 0          # no retries — erasure is not idempotent on partial failure
+      activeDeadlineSeconds: {{ .Values.binaries.erasureWorker.timeoutSeconds | default 1800 }}
+      ttlSecondsAfterFinished: {{ .Values.binaries.erasureWorker.ttlSecondsAfterFinished | default 604800 }}
+      template:
+        metadata:
+          labels: {{- include "exchangeos.labels" (dict "Release" .Release "binaryName" $binaryName) | nindent 12 }}
+        spec:
+          serviceAccountName: {{ .Values.serviceAccount.name }}
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            fsGroup: 65532
+          containers:
+            - name: erasure-worker
+              image: {{ include "exchangeos.image" (dict "Values" .Values "binaryName" $binaryName) }}
+              imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+              command: ["/bin/erasure-worker"]
+              # The actual --ticket + --plan + (--execute|--dry-run) args are
+              # supplied by the on-call operator at `kubectl create job` time
+              # so they cannot be smuggled in via the chart values.
+              envFrom:
+                - configMapRef:
+                    name: {{ .Release.Name }}-config
+                - secretRef:
+                    name: exchangeos-db
+                - secretRef:
+                    name: exchangeos-erasure-approvers
+              env:
+                - name: EXCHANGEOS_OPERATOR_TENANT_ID
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ .Release.Name }}-config
+                      key: EXCHANGEOS_OPERATOR_TENANT_ID
+              volumeMounts:
+                - name: plan
+                  mountPath: /etc/erasure-plan
+                  readOnly: true
+              resources: {{- toYaml .Values.binaries.erasureWorker.resources | nindent 16 }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+          volumes:
+            - name: plan
+              secret:
+                # Per-request Secret created by DPO ops at Stage 3 — naming:
+                #   exchangeos-erasure-plan-LGPD-YYYY-NNNN
+                # Operator overrides the volume source at `kubectl create job`
+                # time via a patch; the default points at a fixture that does
+                # NOT exist so a misfire fails loud.
+                secretName: {{ .Values.binaries.erasureWorker.planSecretName | default "exchangeos-erasure-plan-MISSING" }}
+                optional: false
+{{- end }}

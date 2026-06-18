@@ -54,44 +54,70 @@ with `[REDACTED PER LGPD ART 18 IV LGPD-2026-0001]`).
 
 ## Stage 3 — Execution (within 12 days)
 
-Generate execution plan as YAML:
+The executor is [`cmd/erasure-worker/`](../../../cmd/erasure-worker/main.go).
+Contract for `--plan` input is the JSON Schema at
+[`schemas/erasure-plan-v1.json`](../../../schemas/erasure-plan-v1.json) —
+plans are JSON, not YAML, to avoid an external parser in the security path.
+The DPO console may render YAML for human review and convert before signing.
 
-```yaml
-ticket: LGPD-2026-0001
-operations:
-  - table: actors
-    where: id IN ('uuid-1', 'uuid-2')
-    op: redact
-    fields: [name, email, tax_id, phone, address]
-  - table: counterparties
-    where: id IN ('uuid-3')
-    op: redact
-    fields: [name, beneficial_owner_name, beneficial_owner_doc]
-  - table: quote_streams
-    where: requester_id IN ('uuid-1')
-    op: hard_delete  # no regulatory hold
-  - table: screening_results
-    where: actor_id IN ('uuid-1')
-    op: redact
-    fields: [hit_details, raw_evidence]
+Example plan (matches `erasure-plan-v1.json`):
+
+```json
+{
+  "ticket": "LGPD-2026-0001",
+  "subject_ref": "hashed-cpf-or-uuid",
+  "approvals": ["dpo", "compliance_officer"],
+  "operations": [
+    {
+      "table": "actors",
+      "where": "actor_id IN ('uuid-1', 'uuid-2')",
+      "op": "redact",
+      "fields": ["display_name", "external_sub"]
+    },
+    {
+      "table": "counterparties",
+      "where": "counterparty_id IN ('uuid-3')",
+      "op": "hard_delete"
+    }
+  ]
+}
 ```
 
 DPO + Compliance Officer co-sign the plan. Then:
 
 ```bash
-go run cmd/erasure-worker --ticket LGPD-2026-0001 --plan plan.yaml --dry-run
-# review output, then:
-go run cmd/erasure-worker --ticket LGPD-2026-0001 --plan plan.yaml --execute
+# Optional but recommended — exact row count preview per op.
+EXCHANGEOS_DB_DSN="postgres://..." \
+  ./bin/erasure-worker --ticket LGPD-2026-0001 --plan plan.json --dry-run
+
+# Execute — requires THREE independent guards:
+EXCHANGEOS_ERASURE_APPROVERS="dpo,compliance_officer" \
+EXCHANGEOS_ERASURE_CONFIRM="YES-I-MEAN-IT" \
+EXCHANGEOS_DB_DSN="postgres://..." \
+EXCHANGEOS_OPERATOR_TENANT_ID="<platform-tenant-uuid>" \
+  ./bin/erasure-worker --ticket LGPD-2026-0001 --plan plan.json --execute
 ```
 
 Every operation:
-- Runs inside a single CRDB transaction per table
-- Emits `audit_event(type='LGPD_ERASURE', ticket=LGPD-2026-0001, table=X, row_count=N, before_hash, after_hash)`
-- Updates the outbox with `lgpd.erasure_completed.v1` for downstream (LedgerOS,
-  ComplOS) to apply equivalent erasure
+- Runs inside its own CRDB transaction with `SET TRANSACTION PRIORITY HIGH`
+- Emits one `audit_events` row with `event_type='LGPD_ERASURE_OP'` carrying
+  the full op payload (ticket, table, rows_affected, before/after hashes)
+- After the last op commits, emits a final `audit_events` row
+  (`LGPD_ERASURE_COMPLETED`) + an `outbox_events` row
+  (`event_name='lgpd.erasure_completed.v1'`, topic
+  `exchangeos.lgpd.erasure.events.v1`) atomically in one tx so downstream
+  (LedgerOS, ComplOS) consumers can apply equivalent erasure.
 
-`cmd/erasure-worker/` is planned — tracked in `.base/plans/00-governance/lgpd-backlog.md`.
-Until implemented, execute via reviewed SQL scripts under 4-eyes (DPO + Platform Lead).
+Production deploy: [`erasure-worker-cronjob.yaml`](../../../deploy/helm/exchangeos/templates/erasure-worker-cronjob.yaml)
+ships a permanently-suspended CronJob; on-call triggers it via
+`kubectl create job --from=cronjob/erasure-worker`. See the runbook entry in
+[`docs/operations/runbook-index.md`](../../operations/runbook-index.md) under
+**Security & compliance** for the full invocation.
+
+Each request's evidence (intake form, eligibility report, signed plan,
+executor logs, completion proof) lands under
+[`.audit-bundles/lgpd-requests/<ticket>/`](../../../.audit-bundles/lgpd-requests/README.md) —
+7-year retention per regulatory baseline.
 
 ## Stage 4 — Response to subject (within 15 days)
 

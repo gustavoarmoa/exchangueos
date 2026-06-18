@@ -1,0 +1,6 @@
+# Append-only. One file per erasure-worker invocation:
+#
+#   dry-run-YYYY-MM-DDTHH:MM.json
+#   execute-YYYY-MM-DDTHH:MM.json
+#
+# Capture stdout (slog JSON lines) verbatim — do not edit.

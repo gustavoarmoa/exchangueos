@@ -1,0 +1,14 @@
+{
+  "ticket": "LGPD-YYYY-NNNN",
+  "subject_ref": "sha256-of-cpf-or-other-token",
+  "approvals": ["dpo", "compliance_officer"],
+  "operations": [
+    {
+      "table": "actors",
+      "where": "actor_id IN ('00000000-0000-0000-0000-000000000000')",
+      "op": "redact",
+      "fields": ["display_name", "external_sub"],
+      "comment": "Stage 2 eligibility: ELIGIBLE"
+    }
+  ]
+}

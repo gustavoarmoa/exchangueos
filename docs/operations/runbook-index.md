@@ -20,6 +20,7 @@
 | [SoD Matrix](../security/sod-matrix.md) | 7 roles × 23 actions allowance | Quarterly role review + audit |
 | [Incident Response Playbook](../security/incident-response.md) | Sev1-4 response + 5 common scenarios | Page acknowledged |
 | [DR Runbook](../security/dr-runbook.md) | RTO 4h / RPO 5min failover | Regional outage |
+| [LGPD Erasure Workflow](../security/data-lifecycle/erasure-workflow.md) | 5-stage Art. 18 IV process (15-day SLA) — Stage 3 executor is `cmd/erasure-worker` | LGPD erasure request approved |
 
 ## 🛠️ Day 2 ops (Taskfile-driven)
 

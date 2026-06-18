@@ -1,0 +1,17 @@
+{
+  "ticket": "LGPD-YYYY-NNNN",
+  "completed_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "audit_events": [
+    "Paste each audit_events row touched by this ticket, as a JSON object."
+  ],
+  "outbox_event": {
+    "topic": "exchangeos.lgpd.erasure.events.v1",
+    "event_name": "lgpd.erasure_completed.v1",
+    "payload": "paste the outbox_events.event_payload JSON here"
+  },
+  "downstream_confirmations": {
+    "ledgeros": "received | n/a",
+    "complos":  "received | n/a"
+  },
+  "subject_response_sent_at": "YYYY-MM-DDTHH:MM:SS-03:00"
+}

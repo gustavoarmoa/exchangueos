@@ -7,11 +7,37 @@
 package erasure
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
+
+	"github.com/santhosh-tekuri/jsonschema/v5"
 )
+
+//go:embed schema/erasure-plan-v1.json
+var planSchemaBytes []byte
+
+var (
+	planSchemaOnce sync.Once
+	planSchema     *jsonschema.Schema
+	planSchemaErr  error
+)
+
+func loadSchema() (*jsonschema.Schema, error) {
+	planSchemaOnce.Do(func() {
+		c := jsonschema.NewCompiler()
+		if err := c.AddResource("erasure-plan-v1.json", bytes.NewReader(planSchemaBytes)); err != nil {
+			planSchemaErr = fmt.Errorf("erasure: embed schema: %w", err)
+			return
+		}
+		planSchema, planSchemaErr = c.Compile("erasure-plan-v1.json")
+	})
+	return planSchema, planSchemaErr
+}
 
 // Op identifies the operation kind. Only two are supported by design:
 // `redact` (UPDATE fields to a marker string) and `hard_delete` (DELETE WHERE).
@@ -50,7 +76,23 @@ var ErrInvalidPlan = errors.New("erasure: invalid plan")
 // JSON chosen over YAML to avoid an external dependency in a security-critical
 // path. The DPO interface is expected to render YAML for human review and
 // convert to JSON before signing.
+//
+// Validation runs in two layers: first the embedded JSON Schema
+// (schemas/erasure-plan-v1.json) enforces shape + enums + per-op constraints,
+// then the Go struct-level Validate() performs semantic checks the schema
+// can't express (e.g. ticket-string ownership rules).
 func ParsePlan(data []byte) (*Plan, error) {
+	var raw any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, fmt.Errorf("%w: json: %v", ErrInvalidPlan, err)
+	}
+	schema, err := loadSchema()
+	if err != nil {
+		return nil, fmt.Errorf("%w: schema load: %v", ErrInvalidPlan, err)
+	}
+	if err := schema.Validate(raw); err != nil {
+		return nil, fmt.Errorf("%w: schema: %v", ErrInvalidPlan, err)
+	}
 	var p Plan
 	if err := json.Unmarshal(data, &p); err != nil {
 		return nil, fmt.Errorf("%w: json: %v", ErrInvalidPlan, err)

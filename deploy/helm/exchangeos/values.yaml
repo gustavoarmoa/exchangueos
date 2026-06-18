@@ -71,6 +71,25 @@ binaries:
       concurrencyPolicy: Forbid
     image: { repository: exchangeos-cred-rotator, tag: latest }
 
+  # erasure-worker — LGPD Art. 18 IV executor. Manual-trigger only; rendered
+  # CronJob is permanently suspended and pinned to an invalid date.
+  # See deploy/helm/exchangeos/templates/erasure-worker-cronjob.yaml.
+  erasureWorker:
+    enabled: true
+    image: { repository: exchangeos-erasure-worker, tag: latest }
+    timeoutSeconds: 1800            # 30 min hard timeout per run
+    ttlSecondsAfterFinished: 604800 # 7-day pod retention for audit-bundle pickup
+    history:
+      success: 30
+      failed: 30
+    # Per-request plan Secret name — operator overrides at `kubectl create
+    # job` time. Default intentionally points at a non-existent Secret so a
+    # mis-fire fails loud during volume mount.
+    planSecretName: "exchangeos-erasure-plan-MISSING"
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits:   { cpu: 500m, memory: 256Mi }
+
 # ── Shared config ─────────────────────────────────────────────────────────────
 
 config:

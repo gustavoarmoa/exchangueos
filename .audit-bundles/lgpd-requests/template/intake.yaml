@@ -1,0 +1,16 @@
+# Stage 1 — intake record. Filled by DPO after identity verification succeeds.
+# NO RAW PII — hash CPF/CNPJ with SHA-256 before writing.
+ticket: LGPD-YYYY-NNNN
+received_at: "YYYY-MM-DDTHH:MM:SS-03:00"
+channel: dpo-email | portal | postal-mail
+subject_ref:
+  cpf_sha256: ""     # sha256 of CPF
+  cnpj_sha256: ""    # if business — leave empty for individuals
+  notes: ""          # any disambiguator (e.g. dual-citizenship case)
+verification:
+  method: identos-sms | notarised | gov-id-second-factor
+  verified_at: "YYYY-MM-DDTHH:MM:SS-03:00"
+  verifier_actor_id: ""  # uuid of the DPO/officer who verified
+  evidence_ref: ""       # secure storage URL for the ID copy (NEVER inline)
+sla:
+  target_completion: "YYYY-MM-DD"  # received_at + 15 days

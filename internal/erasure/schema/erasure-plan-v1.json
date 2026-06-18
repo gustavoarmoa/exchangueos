@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://exchangeos.revenu.tech/schemas/erasure-plan-v1.json",
+  "title": "LGPD Erasure Plan v1",
+  "description": "Canonical contract for cmd/erasure-worker --plan input. Co-signed by DPO + Compliance Officer per docs/security/data-lifecycle/erasure-workflow.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ticket", "subject_ref", "operations", "approvals"],
+  "properties": {
+    "ticket": {
+      "type": "string",
+      "pattern": "^LGPD-[0-9]{4}-[0-9]{4}$",
+      "description": "Tracking ticket id, format LGPD-YYYY-NNNN"
+    },
+    "subject_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Opaque identifier of the data subject (typically a hashed CPF or UUID). Never the raw CPF."
+    },
+    "approvals": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 2,
+      "uniqueItems": true,
+      "description": "Roles that signed off on the plan. Must include both 'dpo' and 'compliance_officer' (case-insensitive) for --execute to proceed."
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    }
+  },
+  "$defs": {
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["table", "where", "op"],
+      "properties": {
+        "table": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Target table name. Must match CRDB identifier rules; refuses anything that smells like SQL injection."
+        },
+        "where": {
+          "type": "string",
+          "minLength": 1,
+          "description": "WHERE clause body (without the leading WHERE). Empty refuses to mutate the full table."
+        },
+        "op": {
+          "type": "string",
+          "enum": ["redact", "hard_delete"]
+        },
+        "fields": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "uniqueItems": true,
+          "description": "Required for redact (non-empty); forbidden for hard_delete."
+        },
+        "comment": {
+          "type": "string",
+          "description": "Free-text note for the audit bundle (e.g. retention rule applied)."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "op": { "const": "redact" } } },
+          "then": { "required": ["fields"], "properties": { "fields": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "op": { "const": "hard_delete" } } },
+          "then": { "not": { "required": ["fields"] } }
+        }
+      ]
+    }
+  }
+}
