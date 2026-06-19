@@ -6,9 +6,16 @@
 | **Name** | crdb-hub-cross-repo-pr |
 | **Phase** | F-OPS-PROD |
 | **Sprint** | 1 of MS-024 cycle (blocking for prod deploy) |
-| **Status** | BACKLOG |
+| **Status** | DELIVERED-PENDING-REMOTE |
 | **Owner** | Platform + Shared infra team |
+| **Created** | 2026-05-24 |
+| **Started** | 2026-06-19 |
+| **Delivered** | 2026-06-19 |
+| **Updated** | 2026-06-19 |
 | **Dependencies** | None |
+| **Cockroachdb branch** | `feat/exchangeos-module` |
+| **Cockroachdb commit** | `b3d0689` |
+| **Pending operator action** | Configure remote on `revenu-platform/cockroachdb/` (no remote present), then `git push -u origin feat/exchangeos-module` + `gh pr create`. Cert generation via `make new-module NAME=exchangeos` + Vault seed + staging deploy + go-live-checklist sign-off all remain operator-driven. |
 
 ## Why this milestone
 

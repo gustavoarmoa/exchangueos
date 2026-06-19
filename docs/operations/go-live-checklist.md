@@ -12,7 +12,7 @@ Target date: TBD (post-MS-023a..x delivery confirmation in production environmen
 
 ## ⬜ Infrastructure prerequisites
 
-- [ ] Cross-repo PR merged: `cockroachdb/modules/exchangeos/` (see `docs/operations/crdb-hub-tls-pr.md`)
+- [x] Cross-repo PR prepared: `cockroachdb/modules/exchangeos/` — branch `feat/exchangeos-module` commit `b3d0689` (see `docs/operations/crdb-hub-tls-pr.md`). Awaiting cockroachdb remote configuration → push → review → merge.
 - [ ] CRDB production cluster bootstrapped + cert issued
 - [ ] Kafka cluster reachable from GKE Autopilot (cross-VPC peering or PSC)
 - [ ] GCP project provisioned: `revenu-platform-prod`

@@ -3,6 +3,34 @@
 > Target repo: `revenu-tech/cockroachdb` (shared CRDB hub)
 > Target path: `cockroachdb/modules/exchangeos/`
 > Required before: production cluster bootstrap
+>
+> **Status: PREPARED 2026-06-19** — local branch `feat/exchangeos-module`
+> commit `b3d0689` in `revenu-platform/cockroachdb/` carries the
+> scaffold (`modules/exchangeos/docker-compose.yml` + `INTEGRATION.md`).
+> PR opening is blocked on remote configuration for the cockroachdb
+> repo; once the remote exists, `git push -u origin feat/exchangeos-module`
+> + `gh pr create` finishes the loop. Track via MS-024l.
+
+## Note on this spec vs the delivered shape
+
+The "What to add" block below describes an early-pass vision (database.sql
++ users.sql + Taskfile.yml + env/{dev,staging,production}.env). The
+**delivered shape** in cockroachdb commit `b3d0689` follows the actual
+convention used by `modules/authorityos/` and `modules/onboardos/`:
+
+- `modules/exchangeos/docker-compose.yml` — verbatim copy of
+  `_template/docker-compose.yml` (reads MODULE from per-module `.env`
+  which is gitignored + scaffolded by `make new-module NAME=exchangeos`).
+- `modules/exchangeos/INTEGRATION.md` — operator guide covering host /
+  Docker integration, DSN format, migrations, the read-only
+  `exchangeos_auditor` role, and Vault path for the prod cert.
+
+Per-module `database.sql` and `users.sql` files are not the hub repo
+convention — the database name is inferred from `MODULE`, and role
+grants are scripted into INTEGRATION.md so the shared-infra team can
+review them without diving into SQL files. If the shared-infra team
+prefers explicit SQL files, the spec below can be revived during PR
+review.
 
 ## Why
 

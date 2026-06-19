@@ -27,13 +27,15 @@
 - ✅ pkg/iso20022/fxtr round-trip test via marshaller + registry
 
 **Deferred (tracked separately, not blocking delivery):**
-- ⏳ `cockroachdb/modules/exchangeos/` hub TLS registration — **cross-repo PR** in the
-  `cockroachdb` shared-hub repo. Out of scope for this module; tracked in shared-infra backlog.
+- ✅ `cockroachdb/modules/exchangeos/` hub TLS registration — closed by **MS-024l**
+  (2026-06-19): scaffold prepared on local branch `feat/exchangeos-module` commit
+  `b3d0689` in `revenu-platform/cockroachdb/`. PR push awaits remote configuration
+  for the cockroachdb repo. See `docs/operations/crdb-hub-tls-pr.md`.
 - ⏳ Live OLINDA HTTP cert / proxy production wiring — implementation merged (4.8.0); production
   config follows in deploy/terraform when DEV cycle completes.
 
 This milestone is closed with the iso20022 + scaffolding deliverables fully in place.
-The cross-repo CRDB hub PR is a parallel work item.
+The cross-repo CRDB hub PR work is delivered (locally prepared) — push remains user-driven.
 
 ## Description
 
