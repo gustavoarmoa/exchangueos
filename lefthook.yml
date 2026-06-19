@@ -62,6 +62,10 @@ pre-push:
           echo "(govulncheck not installed — install: go install golang.org/x/vuln/cmd/govulncheck@latest)"
         fi
 
+    bacen-codegen-drift:
+      run: bash scripts/check-bacen-codegen.sh
+      fail_text: "pkg/bacen/codes_full.go is stale vs the CSV — run 'go generate ./pkg/bacen/...' and re-commit"
+
 # ─── commit-msg: Conventional Commits enforcement ───────────────────────────
 commit-msg:
   commands:

@@ -1,0 +1,47 @@
+code,category,subcategory,description_pt,description_en,direction,doc_requirement,iof_op_type,active
+10000,COMERCIAL,EXPORTACAO,Exportação de mercadorias,Goods export,INGRESSO,INVOICE+DUE,EXPORT,true
+10101,COMERCIAL,EXPORTACAO_ANTECIPADA,Exportação - recebimento antecipado,Goods export - advance receipt,INGRESSO,INVOICE+DUE+CONTRACT,EXPORT,true
+10200,COMERCIAL,IMPORTACAO,Importação de mercadorias,Goods import,REMESSA,INVOICE+DI,IMPORT,true
+10201,COMERCIAL,IMPORTACAO_ANTECIPADA,Importação - pagamento antecipado,Goods import - advance payment,REMESSA,INVOICE+DI+CONTRACT,IMPORT,true
+15000,SERVICOS,SERVICOS_GERAIS,Serviços diversos,Miscellaneous services,REMESSA,INVOICE+CONTRACT,DEFAULT,true
+15001,SERVICOS,SERVICOS_TECNICOS,Serviços técnicos profissionais,Professional technical services,REMESSA,INVOICE+CONTRACT,DEFAULT,true
+15100,SERVICOS,TRANSPORTE,Serviços de transporte internacional,International transport services,REMESSA,INVOICE,DEFAULT,true
+15200,SERVICOS,SEGUROS,Prêmios de seguros,Insurance premiums,REMESSA,INVOICE+CONTRACT,INSURANCE_FOREIGN,true
+15201,SERVICOS,SEGUROS_INDENIZACAO,Indenizações de seguros,Insurance indemnities,INGRESSO,CONTRACT+CLAIM,INSURANCE_FOREIGN,true
+15300,SERVICOS,COMUNICACOES,Serviços de telecomunicações,Telecommunications services,REMESSA,INVOICE,DEFAULT,true
+15400,SERVICOS,CONSTRUCAO,Serviços de construção,Construction services,REMESSA,INVOICE+CONTRACT,DEFAULT,true
+15500,SERVICOS,GOVERNAMENTAIS,Serviços governamentais,Government services,REMESSA,OFFICIAL_REQUEST,DEFAULT,true
+20000,CAPITAL,INVESTIMENTO_DIRETO_INGRESSO,Investimento estrangeiro direto - ingresso,Foreign direct investment - inbound,INGRESSO,SCE-IED+CONTRACT,INVESTMENT,true
+20001,CAPITAL,INVESTIMENTO_DIRETO_RETORNO,Investimento estrangeiro direto - retorno,Foreign direct investment - return,REMESSA,SCE-IED+ASSEMBLY,INVESTMENT,true
+20002,CAPITAL,INVESTIMENTO_DIRETO_DIVIDENDOS,Distribuição de dividendos,Dividend distribution,REMESSA,SCE-IED+ASSEMBLY,INVESTMENT,true
+20100,CAPITAL,INVESTIMENTO_PORTFOLIO_INGRESSO,Investimento em portfólio - ingresso,Portfolio investment - inbound,INGRESSO,B3+CVM,INVESTMENT,true
+20101,CAPITAL,INVESTIMENTO_PORTFOLIO_RETORNO,Investimento em portfólio - retorno,Portfolio investment - return,REMESSA,B3+CVM,INVESTMENT,true
+21000,CAPITAL,EMPRESTIMO_INGRESSO,Empréstimo externo - ingresso,External loan - inbound,INGRESSO,SCE-CREDITO+CONTRACT,LOAN_SHORT,true
+21001,CAPITAL,EMPRESTIMO_AMORTIZACAO,Empréstimo externo - amortização,External loan - amortization,REMESSA,SCE-CREDITO+SCHEDULE,LOAN_SHORT,true
+21002,CAPITAL,EMPRESTIMO_JUROS,Empréstimo externo - juros,External loan - interest,REMESSA,SCE-CREDITO+SCHEDULE,LOAN_SHORT,true
+21100,CAPITAL,EMPRESTIMO_INTERCOMPANY,Empréstimo intercompany,Intercompany loan,REMESSA,SCE-CREDITO+CONTRACT,LOAN_SHORT,true
+21200,CAPITAL,FINANCIAMENTO_IMPORTACAO,Financiamento de importação,Import financing,REMESSA,DI+CONTRACT,LOAN_SHORT,true
+22000,CAPITAL,CBE,Capitais brasileiros no exterior,Brazilian capital abroad,REMESSA,SCE-CBE,INVESTMENT,true
+22001,CAPITAL,CBE_RETORNO,Repatriação CBE,CBE repatriation,INGRESSO,SCE-CBE,INVESTMENT,true
+30000,TRANSFERENCIAS,DOACAO,Doações e legados,Donations and legacies,REMESSA,DECLARATION,DEFAULT,true
+30001,TRANSFERENCIAS,HERANCA,Heranças,Inheritance,INGRESSO,COURT_ORDER,DEFAULT,true
+30002,TRANSFERENCIAS,SALARIOS,Salários e remunerações,Salaries and remunerations,REMESSA,EMPLOYMENT,DEFAULT,true
+30003,TRANSFERENCIAS,APOSENTADORIA,Aposentadoria e pensões,Retirement and pensions,REMESSA,RETIREMENT_PROOF,DEFAULT,true
+30100,TRANSFERENCIAS,MANUTENCAO_RESIDENTES,Manutenção de residentes no exterior,Maintenance of non-residents,REMESSA,RELATIONSHIP_PROOF,DEFAULT,true
+30200,TRANSFERENCIAS,ESTUDOS,Despesas com estudos,Study expenses,REMESSA,SCHOOL_PROOF,DEFAULT,true
+30300,TRANSFERENCIAS,TRATAMENTO_MEDICO,Tratamento médico,Medical treatment,REMESSA,MEDICAL_PROOF,DEFAULT,true
+40000,TURISMO,VIAGEM_INTERNACIONAL,Viagens internacionais - cartão,International travel - card,REMESSA,DECLARATION,TRAVEL_CARD,true
+40001,TURISMO,VIAGEM_INTERNACIONAL_ESPECIE,Viagens internacionais - espécie,International travel - cash,REMESSA,DECLARATION,TRAVEL_CASH,true
+40002,TURISMO,RECEBIMENTOS_TURISTAS,Recebimentos de turistas estrangeiros,Foreign tourist receipts,INGRESSO,RECEIPT,DEFAULT,true
+50000,CARTAO,CARTAO_CREDITO,Compras com cartão de crédito,Credit card purchases,REMESSA,STATEMENT,CREDIT_CARD,true
+50001,CARTAO,CARTAO_DEBITO,Compras com cartão de débito,Debit card purchases,REMESSA,STATEMENT,DEFAULT,true
+60000,RENDA,JUROS_DEPOSITO,Juros de depósitos,Deposit interest,INGRESSO,STATEMENT,DEFAULT,true
+60100,RENDA,DIREITOS_AUTORAIS,Direitos autorais,Copyright royalties,REMESSA,CONTRACT,DEFAULT,true
+60200,RENDA,ROYALTIES_TECNOLOGIA,Royalties tecnologia,Technology royalties,REMESSA,INPI+CONTRACT,DEFAULT,true
+60201,RENDA,ROYALTIES_MARCA,Royalties marca / patente,Trademark / patent royalties,REMESSA,INPI+CONTRACT,DEFAULT,true
+70000,DERIVATIVOS,DERIVATIVOS_NDF,Operações com derivativos - NDF,Derivative operations - NDF,BIDIRECTIONAL,ISDA+CONTRACT,DEFAULT,true
+70001,DERIVATIVOS,DERIVATIVOS_FORWARD,Operações com derivativos - Forward,Derivative operations - Forward,BIDIRECTIONAL,ISDA+CONTRACT,DEFAULT,true
+70002,DERIVATIVOS,DERIVATIVOS_SWAP,Operações com derivativos - Swap,Derivative operations - Swap,BIDIRECTIONAL,ISDA+CONTRACT,DEFAULT,true
+80000,OUTROS,OUTROS_NAO_ESPECIFICADOS,Outras operações não especificadas,Other unspecified operations,BIDIRECTIONAL,JUSTIFICATION,DEFAULT,true
+90000,VASP,ATIVO_VIRTUAL_INGRESSO,Recebimento por ativos virtuais (VASP),Virtual asset receipt (VASP),INGRESSO,VASP_REGISTER,DEFAULT,true
+90001,VASP,ATIVO_VIRTUAL_REMESSA,Pagamento por ativos virtuais (VASP),Virtual asset payment (VASP),REMESSA,VASP_REGISTER,DEFAULT,true

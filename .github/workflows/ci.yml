@@ -43,6 +43,9 @@ jobs:
           version: latest
           args: --timeout 5m
 
+      - name: bacen codegen drift guard
+        run: bash scripts/check-bacen-codegen.sh
+
   # ─── Unit tests w/ race + coverage ───────────────────────────────────────
   test:
     name: test (${{ matrix.os }})

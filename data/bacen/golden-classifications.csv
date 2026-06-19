@@ -1,0 +1,145 @@
+phrase,expected_code,notes
+Exportação de mercadorias para Argentina,10000,direct commercial export
+Vendas externas de produtos eletrônicos,10000,export variant
+Export of manufactured goods to Germany,10000,en variant
+Exportação de café para Itália,10000,commodity export
+Receita de exportação de soja,10000,agribusiness export
+Exportação - recebimento antecipado de cliente japonês,10101,advance export
+Adiantamento de cliente externo para exportação,10101,advance export variant
+ACC adiantamento contrato câmbio exportação,10101,ACC acronym
+Importação de mercadorias da China,10200,direct commercial import
+Import of raw materials from Vietnam,10200,en variant
+Compra de máquinas industriais alemãs,10200,import via compra
+Importação de bens de capital,10200,capital goods import
+Importação - pagamento antecipado ao fornecedor,10201,advance import
+Pagamento adiantado para importação de bens,10201,advance import variant
+Pré-pagamento de importação,10201,prepayment import
+Serviços diversos contratados no exterior,15000,generic services
+Pagamento de serviços gerais à matriz estrangeira,15000,services variant
+Serviços técnicos profissionais de consultoria,15001,technical services
+Honorários de consultoria internacional,15001,technical services variant
+Pagamento de serviços técnicos no exterior,15001,classic phrase
+Consultoria estratégica internacional,15001,consultancy
+Frete internacional rodoviário,15100,transport services
+Serviços de transporte marítimo,15100,transport variant
+International shipping services,15100,en variant
+Frete aéreo de carga,15100,air freight
+Prêmios de seguro de carga internacional,15200,insurance premium
+Prêmio de seguro internacional,15200,classic phrase
+Insurance premium for marine cargo,15200,en variant
+Seguro de transporte de mercadorias,15200,cargo insurance
+Indenização de sinistro de seguro recebida do exterior,15201,insurance indemnity
+Recebimento de indenização de seguro internacional,15201,insurance indemnity variant
+Pagamento de sinistro por resseguradora,15201,indemnity variant
+Serviços de telecomunicação internacional,15300,telecom services
+Telecommunications services for cross-border calls,15300,en variant
+Pagamento por roaming internacional,15300,telecom roaming
+Pagamento de serviços de construção no exterior,15400,construction services
+Construção de obra contratada com empresa estrangeira,15400,construction variant
+Engenharia civil em obra internacional,15400,civil engineering
+Serviços governamentais — embaixada,15500,government services
+Pagamento a representação consular brasileira,15500,gov services variant
+Taxa consular para emissão de documento,15500,consular fee
+Investimento estrangeiro direto - aporte de capital,20000,FDI inbound
+Aporte de capital de matriz estrangeira,20000,FDI inbound variant
+Foreign direct investment from US parent company,20000,en variant
+IED ingresso de novo sócio internacional,20000,IED acronym
+Retorno de investimento estrangeiro direto,20001,FDI return
+IED - repatriação de capital ao investidor,20001,FDI return variant
+Desinvestimento de empresa estrangeira no Brasil,20001,divestment
+Distribuição de dividendos a sócios estrangeiros,20002,dividends
+Pagamento de dividendos para investidor não-residente,20002,dividends variant
+Juros sobre capital próprio remetidos ao exterior,20002,JCP
+Investimento estrangeiro em portfólio - ingresso,20100,portfolio inbound
+Aplicação financeira de investidor estrangeiro em ações B3,20100,portfolio variant
+Investidor não-residente compra de títulos públicos,20100,portfolio bonds
+Retorno de investimento em portfólio para o exterior,20101,portfolio return
+Saída de recursos de investimento em ações,20101,portfolio return variant
+Resgate de aplicação financeira por não-residente,20101,redemption
+Empréstimo externo - recebimento,21000,external loan inbound
+Ingresso de financiamento internacional,21000,loan variant
+Captação de recurso via bond internacional,21000,bond issuance
+Amortização de empréstimo externo,21001,loan amortization
+Pagamento de principal de empréstimo internacional,21001,loan amortization variant
+Quitação parcial de dívida com credor estrangeiro,21001,debt repayment
+Pagamento de juros de empréstimo externo,21002,loan interest
+Juros sobre dívida com banco estrangeiro,21002,loan interest variant
+Juros remetidos ao credor offshore,21002,interest variant
+Empréstimo intercompany de matriz estrangeira,21100,intercompany loan
+Mútuo com empresa do mesmo grupo no exterior,21100,intercompany variant
+Crédito intragrupo entre filiais,21100,intragroup credit
+Financiamento de importação de bens de capital,21200,import financing
+Linha de crédito para importação,21200,import financing variant
+Trade finance — financiamento de importação,21200,trade finance
+Capitais brasileiros no exterior - aplicação,22000,CBE outbound
+Investimento de pessoa física brasileira em fundo no exterior,22000,CBE variant
+Constituição de empresa offshore por residente,22000,offshore setup
+Repatriação CBE - retorno de capital,22001,CBE inbound
+Retorno de aplicação no exterior por residente,22001,CBE inbound variant
+Resgate de fundo offshore por residente brasileiro,22001,offshore redemption
+Doação para familiar no exterior,30000,donation
+Legado em moeda estrangeira por testamento,30000,donation variant
+Donativo para entidade beneficente estrangeira,30000,charity donation
+Herança recebida do exterior,30001,inheritance
+Recebimento de herança de parente estrangeiro,30001,inheritance variant
+Espólio recebido de país estrangeiro,30001,estate
+Pagamento de salário a funcionário expatriado,30002,salary
+Remuneração de trabalhador em missão no exterior,30002,salary variant
+Folha de pagamento de expatriados,30002,expat payroll
+Pagamento de aposentadoria ao exterior,30003,retirement
+Pensão paga a aposentado residente fora do Brasil,30003,retirement variant
+Benefício previdenciário ao exterior,30003,pension benefit
+Manutenção de familiar residente no exterior,30100,maintenance
+Envio mensal para sustento de familiar fora do Brasil,30100,maintenance variant
+Mesada para filho estudando fora do país,30100,allowance
+Despesas com estudos no exterior,30200,study
+Pagamento de mensalidade escolar no exterior,30200,study variant
+Tuition fee paid to foreign university,30200,en variant
+Remessa para tratamento médico no exterior,30300,medical
+Pagamento de internação hospitalar fora do Brasil,30300,medical variant
+Cobertura de tratamento médico-hospitalar internacional,30300,medical variant 2
+Viagem internacional - cartão de crédito,40000,travel card
+Despesa de turismo no exterior - cartão,40000,travel card variant
+Compras de turismo com cartão de crédito internacional,40000,travel card classic
+Viagem internacional em espécie,40001,travel cash
+Compra de moeda para viagem turística,40001,travel cash variant
+Aquisição de dólar em espécie para viagem,40001,cash purchase travel
+Recebimento em moeda estrangeira por hospedagem de turista,40002,tourist receipts
+Pagamento por turista estrangeiro a hotel brasileiro,40002,tourist receipts variant
+Pacote turístico vendido a estrangeiro com pagamento em moeda externa,40002,tourism receipts
+Compras com cartão de crédito internacional,50000,credit card
+Fatura de cartão de crédito internacional,50000,credit card variant
+Credit card purchase abroad,50000,en variant
+Compras com cartão de débito internacional,50001,debit card
+Saque com cartão de débito fora do país,50001,debit card variant
+Pagamento via cartão de débito em loja estrangeira,50001,debit POS
+Juros de depósito em conta no exterior,60000,deposit interest
+Rendimento de aplicação financeira externa,60000,deposit interest variant
+Juros remuneratórios de conta corrente offshore,60000,offshore interest
+Direitos autorais recebidos do exterior,60100,copyright
+Royalties de obra literária internacional,60100,copyright variant
+Direito autoral de música licenciada para gravadora estrangeira,60100,music rights
+Royalties tecnologia - software,60200,tech royalty
+Pagamento de royalty de patente registrada no exterior,60200,tech royalty variant
+Licença de uso de tecnologia patenteada,60200,patent license
+Royalty de marca registrada no exterior,60201,trademark royalty
+Pagamento de licença de marca internacional,60201,trademark variant
+Franquia internacional - royalty de marca,60201,franchise royalty
+Operação de derivativo NDF cambial,70000,NDF derivative
+Non-deliverable forward USD/BRL,70000,NDF en
+NDF com counterparty offshore,70000,NDF classic
+Operação Forward de moeda estrangeira,70001,forward derivative
+Hedge cambial via forward contract,70001,forward variant
+Forward FX delivery físico,70001,forward delivery
+Swap de taxa de juros internacional,70002,swap derivative
+Currency swap operation,70002,swap variant
+Cross-currency swap entre BRL e USD,70002,xccy swap
+Operação financeira não classificada nas demais naturezas,80000,other
+Demais operações não especificadas,80000,other variant
+Conversão entre moedas estrangeiras EUR/JPY,80000,fallback other
+Pagamento por aquisição de ativo virtual (cripto) ao exterior,90001,VASP outflow
+Compra de criptoativo de exchange estrangeira,90001,VASP variant
+Remessa para wallet de stablecoin no exterior,90001,VASP stablecoin
+Recebimento de pagamento em ativo virtual,90000,VASP inflow
+Venda de criptoativo a comprador estrangeiro,90000,VASP inflow variant
+Recebimento em criptomoeda por serviço prestado,90000,VASP service

@@ -15,12 +15,17 @@ func dec(s string) decimal.Decimal { return decimal.RequireFromString(s) }
 
 func TestClassifier_ByCode(t *testing.T) {
 	c := bacen.NewClassifier()
-	n, ok := c.ByCode("10001")
+	// 10000 is the canonical export code from the generated catalogue.
+	n, ok := c.ByCode("10000")
 	if !ok {
-		t.Fatal("expected 10001 in catalog")
+		t.Fatal("expected 10000 in catalog")
 	}
 	if n.Nature != bacen.NatureIngresso {
 		t.Errorf("nature: got %s want INGRESSO", n.Nature)
+	}
+	// Legacy builtin codes still resolve for backward compat.
+	if _, ok := c.ByCode("60001"); !ok {
+		t.Fatal("legacy builtin 60001 must still resolve")
 	}
 }
 
@@ -37,14 +42,14 @@ func TestClassifier_Classify_Hints(t *testing.T) {
 		hint     string
 		wantCode string
 	}{
-		{"Export of coffee", "10001"},
-		{"IMPORT machinery", "10002"},
-		{"royalty payment", "20011"},
-		{"investment inflow", "30001"},
-		{"travel cash for trader", "50001"},
-		{"credit card abroad", "50002"},
-		{"cross-currency conversion", "60001"},
-		{"derivative", "63010"},
+		{"Exportação de café para Itália", "10000"},
+		{"Importação de máquinas da Alemanha", "10200"},
+		{"Pagamento de royalty de patente", "60200"},
+		{"Aporte de investimento estrangeiro direto", "20000"},
+		{"Compra de moeda para viagem turística", "40001"},
+		{"Compras com cartão de crédito internacional", "50000"},
+		{"Conversão entre moedas estrangeiras EUR/JPY", "80000"},
+		{"Operação Forward de moeda estrangeira", "70001"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.hint, func(t *testing.T) {

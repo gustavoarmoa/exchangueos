@@ -23,7 +23,12 @@ secrets/
 # Local data
 docker/compose/data/
 docker/compose/logs/
-data/
+# data/* excludes runtime data subdirs but allows data/bacen/ (regulatory
+# source-of-truth: CSV + golden corpus required for codegen + drift guard +
+# accuracy harness). The negation only works because the parent itself
+# (data/) is NOT excluded.
+data/*
+!data/bacen/
 logs/
 
 # IDE
