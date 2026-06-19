@@ -6,9 +6,14 @@
 | **Name** | complete-postgres-repos |
 | **Phase** | F-OPS-PROD |
 | **Sprint** | 1 of MS-024 cycle |
-| **Status** | ACTIVE |
+| **Status** | DELIVERED |
 | **Owner** | Platform |
+| **Created** | 2026-05-24 |
+| **Started** | 2026-06-18 |
+| **Delivered** | 2026-06-18 |
+| **Updated** | 2026-06-18 |
 | **Dependencies** | None |
+| **Commit** | `b802ddf` |
 
 ## Why this milestone
 

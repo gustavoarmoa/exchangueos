@@ -6,10 +6,14 @@
 | **Name** | lgpd-erasure-worker |
 | **Phase** | F-OPS-PROD (production hardening cycle) |
 | **Sprint** | 1 of MS-024 cycle |
-| **Status** | ACTIVE |
+| **Status** | DELIVERED |
 | **Owner** | Compliance + Platform |
 | **Created** | 2026-05-24 |
-| **Dependencies** | MS-024h (postgres repos) for full-table coverage |
+| **Started** | 2026-06-18 |
+| **Delivered** | 2026-06-18 |
+| **Updated** | 2026-06-18 |
+| **Dependencies** | MS-024h (postgres repos) for full-table coverage — satisfied |
+| **Commit** | `2767fef` |
 
 ## Why this milestone
 

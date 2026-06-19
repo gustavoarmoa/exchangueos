@@ -1,10 +1,10 @@
 # Allenty ExchangeOS — Master Index
 
 > **Versao:** `4.23.0` ([version.md](./version.md))
-> **Status:** 🚧 **MS-023 DELIVERED (26/26) — MS-024 IN-FLIGHT (3 ACTIVE, 10 backlog) + local CRUD admin API live**. 30 tables ≥ 5 rows + POST/PUT/DELETE/LIST/GET end-to-end at `/v1/admin/*`. 36 new assertions green. (CHANGELOG 4.23.0)
+> **Status:** 🚀 **MS-023 DELIVERED (26/26) — MS-024 IN PROGRESS: 3 delivered (024a/e/h), 10 backlog**. Sprint added: LGPD Art. 18 IV executor wired (`cmd/erasure-worker` + JSON Schema + pgx/audit/outbox adapters); 6 BCs migrated to postgres (full 14-BC durability); BACEN classifier 99.3% accuracy on 144-phrase golden corpus + CI drift guard. 1 known gap on 024e (49 of 95 BACEN codes pending Compliance signoff). (CHANGELOG 4.23.0)
 > **Modulo:** ExchangeOS — Standalone FX Module
 > **Portas:** `:8094 HTTP / :9094 gRPC`
-> **Date:** 2026-05-24
+> **Date:** 2026-06-18
 
 ## Visao Geral
 

@@ -6,9 +6,15 @@
 | **Name** | full-bacen-nature-codes |
 | **Phase** | F-OPS-PROD |
 | **Sprint** | 2 of MS-024 cycle |
-| **Status** | ACTIVE |
+| **Status** | DELIVERED-WITH-GAP |
 | **Owner** | Compliance |
+| **Created** | 2026-05-24 |
+| **Started** | 2026-06-18 |
+| **Delivered** | 2026-06-18 |
+| **Updated** | 2026-06-18 |
 | **Dependencies** | None |
+| **Commit** | `23c75b1` |
+| **Known gap** | 46/95 codes shipped; remaining 49 require BACEN Circ 3.690 PDF extraction by Compliance team. See `docs/compliance/bacen-nature-codes.md` "Known gap" section. Accuracy harness 99.3% on the 46-code subset. |
 
 ## Why this milestone
 
