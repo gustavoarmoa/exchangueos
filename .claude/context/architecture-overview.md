@@ -66,7 +66,7 @@
 | Messaging | Kafka KRaft 3-broker + IBM MQ bridge |
 | Streaming | Apache Flink (NOP realtime + CEP fraud) |
 | Observability | OpenTelemetry + Tempo + Mimir + Loki + Grafana |
-| Auth | Identos (gRPC :9084) + KeycloakOS v26.5.3 + Vault |
+| Auth | IdentityOS (gRPC :9084) + KeycloakOS v26.5.3 + Vault |
 | API | gRPC + REST (OpenAPI 3.1) + AsyncAPI 3.0 |
 | Container | Distroless multi-arch (amd64 + arm64) |
 | Orchestration | GKE Autopilot 1.29+ + Helm + Argo Rollouts + GitOps ArgoCD |

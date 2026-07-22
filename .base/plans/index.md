@@ -24,7 +24,7 @@ ExchangeOS e o modulo canonico de **Foreign Exchange (FX)** da Revenu Platform �
 | [05](05-integrations/index.md) | **Integrations** | CLS Bank protocol, CFETS PTPP, SWIFT MT bridge, AccountOS + PaymentOS + 13 modulos native sync | [→](05-integrations/index.md) |
 | [06](06-infrastructure/index.md) | **Infrastructure** | Docker (distroless), K8s (GKE Autopilot), Terraform GCP, Vault, OTel, deploy local (shared CRDB hub TLS), cross-platform tooling | [→](06-infrastructure/index.md) |
 | [07](07-cicd/index.md) | **CI/CD** | GitHub Actions (8 workflows), Git flow, SLSA L3, Cosign keyless, pre-commit HARD enforcement, cost reporting | [→](07-cicd/index.md) |
-| [08](08-security/index.md) | **Security** | IAM (Identos + KeycloakOS + Vault SPI), 8 docs ISO 27000-27005, threat model STRIDE+DREAD, 93 Annex A controls mapeados | [→](08-security/index.md) |
+| [08](08-security/index.md) | **Security** | IAM (IdentityOS + KeycloakOS + Vault SPI), 8 docs ISO 27000-27005, threat model STRIDE+DREAD, 93 Annex A controls mapeados | [→](08-security/index.md) |
 | [09](09-compliance/index.md) | **Compliance** | BACEN Lei 14.286/2021 + 8 Resolucoes (277-561) + Circ 3.978 PLD/FT + Circ 3.690 (95 codigos) + IOF Decreto 12.499 + VASP + eFX 2026 | [→](09-compliance/index.md) |
 | [10](10-quality/index.md) | **Quality** | TDD workflow Red-Green-Refactor, ~290 CRUD tests, 10 E2E cenarios, 30 security gates locais, SLI/SLO, performance baseline | [→](10-quality/index.md) |
 | [11](11-sdd/index.md) | **SDD** | Spec-Driven Development sub-framework (out-of-scope MVP) | [→](11-sdd/index.md) |
