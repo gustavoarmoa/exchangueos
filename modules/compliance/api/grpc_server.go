@@ -146,7 +146,8 @@ func (s *GRPCServer) ScreenCounterparty(ctx context.Context, req *pb.ScreenCount
 	if err != nil {
 		return nil, err
 	}
-	// Stub: empty hits → RiskLow. Real screening calls list providers downstream.
+	// Hits are resolved by the service's SanctionsScreener; the adapter must not
+	// supply them. Without a provider wired the call fails closed.
 	res, err := s.svc.ScreenCounterparty(ctx, domain.NewScreeningInput{
 		TenantID: tid, CounterpartyBIC: req.GetCounterpartyBic(), LEI: req.GetLei(),
 	})

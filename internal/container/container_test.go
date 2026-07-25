@@ -12,14 +12,13 @@ import (
 	"github.com/revenu-tech/exchangeos/internal/container"
 
 	quoteapp "github.com/revenu-tech/exchangeos/modules/quote/application"
-	tradedom "github.com/revenu-tech/exchangeos/modules/trade/domain"
 )
 
 func newMemCfg() *config.Config {
 	return &config.Config{
-		Env: "dev",
-		HTTP: config.HTTPConfig{Port: 18094},
-		GRPC: config.GRPCConfig{Port: 19094, MaxRecvBytes: 1 << 20, MaxSendBytes: 1 << 20},
+		Env:   "dev",
+		HTTP:  config.HTTPConfig{Port: 18094},
+		GRPC:  config.GRPCConfig{Port: 19094, MaxRecvBytes: 1 << 20, MaxSendBytes: 1 << 20},
 		Repos: config.ReposConfig{Backend: "memory"},
 	}
 }
@@ -73,22 +72,20 @@ func TestContainer_QuoteAccepted_BooksTrade(t *testing.T) {
 		t.Fatalf("AcceptQuote: %v", err)
 	}
 
-	// The handler should have BookTrade'd into c.Trade. List to verify.
+	// No trade must be booked. The Quote aggregate carries no counterparty BICs,
+	// no side and no venue, and the handler used to fill those in with literals
+	// ("DEUTDEFF" / "CHASUS33" / "CLS", rate = mid). This assertion previously
+	// expected exactly one trade, which meant it was pinning the fabricated
+	// counterparties as correct behaviour.
+	//
+	// Auto-booking returns here once the RFQ captures buyer/seller/side and the
+	// Quote carries them; at that point this test flips back to asserting the
+	// booked trade AND its counterparties.
 	trades, err := c.Trade.ListTrades(ctx, tenant, "", time.Time{}, time.Time{}, 100)
 	if err != nil {
 		t.Fatalf("ListTrades: %v", err)
 	}
-	if len(trades) != 1 {
-		t.Fatalf("expected 1 trade after AcceptQuote, got %d", len(trades))
-	}
-	tr := trades[0]
-	if tr.Status() != tradedom.StatusPending {
-		t.Errorf("status: got %s want PENDING", tr.Status())
-	}
-	if !tr.BoughtAmount().Equal(decimal.NewFromInt(1_000_000)) {
-		t.Errorf("bought_amount: %s", tr.BoughtAmount())
-	}
-	if tr.BoughtCurrency() != "EUR" || tr.SoldCurrency() != "USD" {
-		t.Errorf("pair: %s/%s", tr.BoughtCurrency(), tr.SoldCurrency())
+	if len(trades) != 0 {
+		t.Fatalf("expected no trade to be booked from a quote without counterparties, got %d", len(trades))
 	}
 }

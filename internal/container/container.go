@@ -165,18 +165,25 @@ func (c *Container) wireEventHandlers() {
 			if err != nil {
 				return tradeapp.AcceptedQuoteView{}, err
 			}
-			return tradeapp.AcceptedQuoteView{
-				TenantID:    q.TenantID(),
-				BuyerBIC:    "DEUTDEFF", // TODO: carry counterparty BICs on the Quote aggregate
-				SellerBIC:   "CHASUS33", // (placeholder; safe for dev)
-				BaseCCY:     q.BaseCCY(),
-				QuoteCCY:    q.QuoteCCY(),
-				NotionalCCY: q.NotionalCCY(),
-				Notional:    q.Notional(),
-				DealRate:    q.Mid(),
-				Venue:       "CLS",
-				AcceptedAt:  time.Now().UTC(),
-			}, nil
+			// The Quote aggregate carries no counterparties, no side and no
+			// venue, so a trade cannot be booked from it.
+			//
+			// This used to fill the gap with literals: BuyerBIC "DEUTDEFF",
+			// SellerBIC "CHASUS33", Venue "CLS". Every trade auto-booked from an
+			// accepted quote was therefore stamped with Deutsche Bank and
+			// JPMorgan as counterparties whatever the client actually traded —
+			// and counterparty identity drives SSI resolution, sanctions
+			// screening and the BACEN filing. DealRate took q.Mid() for the same
+			// reason: the quote records no side, so bid-vs-ask could not be
+			// chosen and the spread was given away in both directions.
+			//
+			// Refusing is the safe behaviour: a trade booked against the wrong
+			// counterparty is worse than a trade not booked. Wiring this up is a
+			// feature — the RFQ must capture buyer/seller/side and the Quote must
+			// carry them — not something the adapter can infer.
+			return tradeapp.AcceptedQuoteView{}, fmt.Errorf(
+				"cannot book trade from quote %s: the Quote aggregate carries no counterparty BICs, "+
+					"no side and no venue; auto-booking is disabled until it does", q.ID())
 		},
 	}
 	c.EventBus.Subscribe("quote.accepted.v1", func(ctx context.Context, e eventbus.Event) error {

@@ -71,9 +71,15 @@ func (s *GRPCServer) AcceptQuote(ctx context.Context, req *pb.AcceptQuoteRequest
 	if err != nil {
 		return nil, mapErr(err)
 	}
-	// Placeholder: until trade-creation worker is implemented, return the quote
-	// id as the trade id. Caller correlates via event log.
-	return &pb.AcceptQuoteResponse{TradeId: q.ID().String()}, nil
+	// trade_id is left empty: accepting a quote does not book a trade.
+	//
+	// This used to return q.ID() — the QUOTE id — in the trade_id field, so every
+	// caller received an identifier that looks like a trade reference and
+	// resolves to nothing. Auto-booking is disabled upstream because the Quote
+	// aggregate carries no counterparties (see internal/container), and until it
+	// does, the honest answer is "no trade".
+	_ = q
+	return &pb.AcceptQuoteResponse{}, nil
 }
 
 // StreamQuotes — pb.QuoteServiceServer streaming RPC (TODO).
