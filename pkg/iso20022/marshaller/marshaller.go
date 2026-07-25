@@ -27,18 +27,18 @@ type Envelope struct {
 // BAH — minimal head.001 fields used by ExchangeOS messages.
 // Full schema covered in head/head_001_001_03.go (generated from XSD).
 type BAH struct {
-	From          string `xml:"Fr>FIId>FinInstnId>BICFI"`
-	To            string `xml:"To>FIId>FinInstnId>BICFI"`
-	BizMsgIdr     string `xml:"BizMsgIdr"`
-	MsgDefIdr     string `xml:"MsgDefIdr"`
-	CreDt         string `xml:"CreDt"`
-	Signature     string `xml:"Sgntr,omitempty"`
+	From      string `xml:"Fr>FIId>FinInstnId>BICFI"`
+	To        string `xml:"To>FIId>FinInstnId>BICFI"`
+	BizMsgIdr string `xml:"BizMsgIdr"`
+	MsgDefIdr string `xml:"MsgDefIdr"`
+	CreDt     string `xml:"CreDt"`
+	Signature string `xml:"Sgntr,omitempty"`
 }
 
 // MarshalOptions controls XML output.
 type MarshalOptions struct {
-	Indent     string // e.g. "  " for pretty-print; empty for production
-	WriteBOM   bool   // SWIFT compatibility may require BOM
+	Indent   string // e.g. "  " for pretty-print; empty for production
+	WriteBOM bool   // SWIFT compatibility may require BOM
 }
 
 // Marshal serialises body with a BAH envelope using the descriptor's URN as MsgDefIdr.
