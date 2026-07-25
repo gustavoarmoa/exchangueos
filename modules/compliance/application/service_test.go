@@ -42,14 +42,55 @@ func TestClassifyOperation_ByCode(t *testing.T) {
 	}
 }
 
+// The expectation here was "20011", from the 20-code seed in pkg/bacen that
+// predates the generated 46-code Circ. 3.690 catalogue. 20011 is not in that
+// catalogue — it is one of 13 seed entries with no official counterpart — and
+// Classifier.ByCode resolves against the generated catalogue first. The royalty
+// codes BACEN actually defines are 60100 (direitos autorais), 60200 (royalties
+// tecnologia) and 60201 (royalties marca / patente); pkg/bacen's own golden set
+// already pins "Pagamento de royalty de patente" to 60200.
 func TestClassifyOperation_FreeText(t *testing.T) {
 	svc, _ := newSvc(t)
 	c, err := svc.ClassifyOperation(context.Background(), uuid.New(), uuid.New(), "Pagamento de royalties")
 	if err != nil {
 		t.Fatalf("Classify: %v", err)
 	}
-	if c.Code() != "20011" {
-		t.Errorf("got %s want 20011", c.Code())
+	if c.Code() != "60200" {
+		t.Errorf("code: got %s want 60200", c.Code())
+	}
+	// A royalty payment leaves the country, so it must classify as a remessa.
+	// Getting the direction wrong misreports the operation to BACEN.
+	if c.Nature() != domain.NatureRemessa {
+		t.Errorf("nature: got %s want %s", c.Nature(), domain.NatureRemessa)
+	}
+}
+
+// The free-text classifier must distinguish the three royalty families rather
+// than collapsing them onto the generic fallback.
+func TestClassifyOperation_FreeText_RoyaltyFamilies(t *testing.T) {
+	tests := []struct {
+		hint string
+		want string
+	}{
+		{"Royalties de obra literária", "60100"},
+		{"Pagamento de direitos autorais", "60100"},
+		{"Royalty de marca", "60201"},
+		{"Royalty de patente", "60200"},
+		{"Licença de uso de tecnologia", "60200"},
+		{"Pagamento de royalties", "60200"}, // generic fallback
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.hint, func(t *testing.T) {
+			svc, _ := newSvc(t)
+			c, err := svc.ClassifyOperation(context.Background(), uuid.New(), uuid.New(), tt.hint)
+			if err != nil {
+				t.Fatalf("Classify(%q): %v", tt.hint, err)
+			}
+			if c.Code() != tt.want {
+				t.Errorf("Classify(%q) = %s, want %s", tt.hint, c.Code(), tt.want)
+			}
+		})
 	}
 }
 
