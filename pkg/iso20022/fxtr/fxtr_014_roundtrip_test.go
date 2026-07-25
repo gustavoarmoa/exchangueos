@@ -13,7 +13,11 @@ import (
 )
 
 func sampleFxtr014() fxtr.FXTradeCaptureConfirmationV05 {
-	tradeDate := time.Date(2026, 5, 24, 14, 0, 0, 0, time.UTC)
+	// Midnight, not 14:00. TradDt and ValDt are ISODate (ISO 20022 date, no
+	// time of day), so the marshaller correctly drops any time component —
+	// seeding one made the round-trip comparison fail against the marshaller
+	// doing the right thing.
+	tradeDate := time.Date(2026, 5, 24, 0, 0, 0, 0, time.UTC)
 	return fxtr.FXTradeCaptureConfirmationV05{
 		TradeIdentification: fxtr.TradeIdentification14{
 			TradeID:         "T-2026-0001",
