@@ -7,9 +7,9 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/revenu-tech/exchangeos/pkg/iso20022/fxtr"
-	"github.com/revenu-tech/exchangeos/pkg/iso20022/marshaller"
-	"github.com/revenu-tech/exchangeos/pkg/iso20022/registry"
+	"github.com/revenutech/exchangeos/pkg/iso20022/fxtr"
+	"github.com/revenutech/exchangeos/pkg/iso20022/marshaller"
+	"github.com/revenutech/exchangeos/pkg/iso20022/registry"
 )
 
 func sampleFxtr014() fxtr.FXTradeCaptureConfirmationV05 {

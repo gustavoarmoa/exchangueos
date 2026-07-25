@@ -15,10 +15,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/revenu-tech/exchangeos/modules/compliance/application"
-	"github.com/revenu-tech/exchangeos/modules/compliance/domain"
-	"github.com/revenu-tech/exchangeos/pkg/bacen"
-	pb "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1"
+	"github.com/revenutech/exchangeos/modules/compliance/application"
+	"github.com/revenutech/exchangeos/modules/compliance/domain"
+	"github.com/revenutech/exchangeos/pkg/bacen"
+	pb "github.com/revenutech/exchangeos/proto/gen/exchangeos/v1"
 )
 
 type GRPCServer struct{ svc *application.Service }

@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	"github.com/revenu-tech/exchangeos/modules/quote/domain"
+	"github.com/revenutech/exchangeos/modules/quote/domain"
 )
 
 // ─── Repository + collaborator interfaces ──────────────────────────────────

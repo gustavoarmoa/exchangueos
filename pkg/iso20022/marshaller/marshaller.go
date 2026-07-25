@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/revenu-tech/exchangeos/pkg/iso20022/registry"
+	"github.com/revenutech/exchangeos/pkg/iso20022/registry"
 )
 
 // Envelope is the canonical outer document combining BAH + business message.

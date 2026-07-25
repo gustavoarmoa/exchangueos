@@ -415,7 +415,7 @@ Plan remains 100% complete (26/26 delivered). This release adds **operational + 
 **(b) MS-023h Production wrap-up:**
 - `deploy/k8s/cert-manager/cluster-issuer.yaml` — cert-manager ClusterIssuer for letsencrypt-prod + letsencrypt-staging with DNS-01 via GCP CloudDNS (wildcards) + HTTP-01 fallback + sample Certificate for api/grpc.exchangeos.revenu.tech (90d duration + 30d renewBefore).
 - `.github/workflows/slsa-attestation.yml` — SLSA Level 3 release workflow triggered on tag push. Per-binary matrix (7 binaries) job: GCP WIF auth → docker/build-push-action multi-arch (amd64+arm64) → Cosign keyless sign (Sigstore OIDC + Rekor) → SBOM CycloneDX attach → actions/attest-build-provenance@v2 push-to-registry → smoke `cosign verify` step validating identity-regexp + OIDC issuer.
-- `deploy/argocd/application.yaml` — GitOps Application pointing at deploy/helm/exchangeos + values-production.yaml. Automated sync (prune+selfHeal+allowEmpty=false) + CreateNamespace + ServerSideApply + ApplyOutOfSyncOnly + PrunePropagationPolicy=foreground + retry backoff (5×, 30s→5m exponential). AppProject `revenu-platform` with sourceRepos whitelist (`https://github.com/revenu-tech/*`) + namespace whitelist + RBAC roles for deployer group.
+- `deploy/argocd/application.yaml` — GitOps Application pointing at deploy/helm/exchangeos + values-production.yaml. Automated sync (prune+selfHeal+allowEmpty=false) + CreateNamespace + ServerSideApply + ApplyOutOfSyncOnly + PrunePropagationPolicy=foreground + retry backoff (5×, 30s→5m exponential). AppProject `revenu-platform` with sourceRepos whitelist (`https://github.com/revenutech/*`) + namespace whitelist + RBAC roles for deployer group.
 - MS-023h moved to delivered/.
 
 **(c) 10 remaining backlog milestones moved to delivered/ with detailed notes:**
@@ -1185,7 +1185,7 @@ Closes 2 of 4 MS-023a gaps acknowledged in 4.2.0.
 - `MS-023a-foundation-scaffolding.md` moved `milestones/backlog/` → `milestones/active/`, status flipped BACKLOG → ACTIVE, `Started: 2026-05-24` field added.
 
 **Repo scaffolding (root):**
-- `go.mod` (`github.com/revenu-tech/exchangeos`, Go 1.25.1, pinned deps: gin, pgx/v5, viper, godotenv, prometheus, shopspring/decimal, zap, OTel SDK 1.34.0, grpc 1.69.4, protobuf 1.36.3)
+- `go.mod` (`github.com/revenutech/exchangeos`, Go 1.25.1, pinned deps: gin, pgx/v5, viper, godotenv, prometheus, shopspring/decimal, zap, OTel SDK 1.34.0, grpc 1.69.4, protobuf 1.36.3)
 - `Taskfile.yml` primary cross-platform runner (40+ targets: install/build/test/lint/sec/db/compose/dash/hooks)
 - `Makefile` delegating to `task` for traditional Unix flows
 - `scripts/exchangeos.ps1` PowerShell mirror for Windows

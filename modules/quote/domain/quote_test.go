@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	"github.com/revenu-tech/exchangeos/modules/quote/domain"
+	"github.com/revenutech/exchangeos/modules/quote/domain"
 )
 
 func dec(s string) decimal.Decimal { return decimal.RequireFromString(s) }

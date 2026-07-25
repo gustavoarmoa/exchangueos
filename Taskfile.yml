@@ -4,7 +4,7 @@ version: '3'
 # Mirror via Makefile delegation + PowerShell scripts (FX-XOS-* patterns).
 
 vars:
-  MODULE: github.com/revenu-tech/exchangeos
+  MODULE: github.com/revenutech/exchangeos
   GO_VERSION: 1.25.1
   HTTP_PORT: 8084
   GRPC_PORT: 9084

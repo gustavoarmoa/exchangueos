@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	qdomain "github.com/revenu-tech/exchangeos/modules/quote/domain"
-	"github.com/revenu-tech/exchangeos/modules/trade/domain"
+	qdomain "github.com/revenutech/exchangeos/modules/quote/domain"
+	"github.com/revenutech/exchangeos/modules/trade/domain"
 )
 
 // QuoteAcceptedHandler reacts to a quote.accepted.v1 event by booking the

@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/revenu-tech/exchangeos/modules/position/application"
-	"github.com/revenu-tech/exchangeos/modules/position/domain"
-	pb "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1"
+	"github.com/revenutech/exchangeos/modules/position/application"
+	"github.com/revenutech/exchangeos/modules/position/domain"
+	pb "github.com/revenutech/exchangeos/proto/gen/exchangeos/v1"
 )
 
 type GRPCServer struct {

@@ -8,12 +8,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	"github.com/revenu-tech/exchangeos/internal/config"
-	"github.com/revenu-tech/exchangeos/internal/container"
+	"github.com/revenutech/exchangeos/internal/config"
+	"github.com/revenutech/exchangeos/internal/container"
 
-	quoteapp "github.com/revenu-tech/exchangeos/modules/quote/application"
-	qdomain "github.com/revenu-tech/exchangeos/modules/quote/domain"
-	tradedom "github.com/revenu-tech/exchangeos/modules/trade/domain"
+	quoteapp "github.com/revenutech/exchangeos/modules/quote/application"
+	qdomain "github.com/revenutech/exchangeos/modules/quote/domain"
+	tradedom "github.com/revenutech/exchangeos/modules/trade/domain"
 )
 
 func newMemCfg() *config.Config {

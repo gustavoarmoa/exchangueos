@@ -12,9 +12,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/revenu-tech/exchangeos/modules/quote/application"
-	"github.com/revenu-tech/exchangeos/modules/quote/domain"
-	pb "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1"
+	"github.com/revenutech/exchangeos/modules/quote/application"
+	"github.com/revenutech/exchangeos/modules/quote/domain"
+	pb "github.com/revenutech/exchangeos/proto/gen/exchangeos/v1"
 )
 
 // GRPCServer adapts pb.QuoteServiceServer to the application service.

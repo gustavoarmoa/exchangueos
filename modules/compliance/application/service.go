@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	"github.com/revenu-tech/exchangeos/modules/compliance/domain"
-	"github.com/revenu-tech/exchangeos/pkg/bacen"
+	"github.com/revenutech/exchangeos/modules/compliance/domain"
+	"github.com/revenutech/exchangeos/pkg/bacen"
 )
 
 // Repositories — split per aggregate to keep each focused.

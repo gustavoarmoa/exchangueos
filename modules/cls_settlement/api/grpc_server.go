@@ -16,14 +16,14 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	clsapp "github.com/revenu-tech/exchangeos/modules/cls_settlement/application"
-	clsdomain "github.com/revenu-tech/exchangeos/modules/cls_settlement/domain"
-	netapp "github.com/revenu-tech/exchangeos/modules/netreport/application"
-	netdomain "github.com/revenu-tech/exchangeos/modules/netreport/domain"
-	payapp "github.com/revenu-tech/exchangeos/modules/payin/application"
-	paydomain "github.com/revenu-tech/exchangeos/modules/payin/domain"
-	"github.com/revenu-tech/exchangeos/pkg/iso20022/camt"
-	pb "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1"
+	clsapp "github.com/revenutech/exchangeos/modules/cls_settlement/application"
+	clsdomain "github.com/revenutech/exchangeos/modules/cls_settlement/domain"
+	netapp "github.com/revenutech/exchangeos/modules/netreport/application"
+	netdomain "github.com/revenutech/exchangeos/modules/netreport/domain"
+	payapp "github.com/revenutech/exchangeos/modules/payin/application"
+	paydomain "github.com/revenutech/exchangeos/modules/payin/domain"
+	"github.com/revenutech/exchangeos/pkg/iso20022/camt"
+	pb "github.com/revenutech/exchangeos/proto/gen/exchangeos/v1"
 )
 
 // GRPCServer adapts pb.SettlementServiceServer over the cls_settlement + payin + netreport

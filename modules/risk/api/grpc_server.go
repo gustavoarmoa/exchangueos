@@ -12,9 +12,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/revenu-tech/exchangeos/modules/risk/application"
-	"github.com/revenu-tech/exchangeos/modules/risk/domain"
-	pb "github.com/revenu-tech/exchangeos/proto/gen/exchangeos/v1"
+	"github.com/revenutech/exchangeos/modules/risk/application"
+	"github.com/revenutech/exchangeos/modules/risk/domain"
+	pb "github.com/revenutech/exchangeos/proto/gen/exchangeos/v1"
 )
 
 type GRPCServer struct {

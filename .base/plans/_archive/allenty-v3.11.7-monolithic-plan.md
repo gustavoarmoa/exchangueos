@@ -1319,7 +1319,7 @@ revenu-platform/exchangeos/
 ├── docker-compose.test.yml
 ├── docker-compose.kafka-cluster.yml
 ├── Makefile
-├── go.mod                             # module github.com/revenu-tech/exchangeos
+├── go.mod                             # module github.com/revenutech/exchangeos
 ├── go.sum
 ├── .env.example
 ├── .golangci.yml
@@ -1380,7 +1380,7 @@ revenu-platform/exchangeos/
 
 | # | Tarefa | Artefato | Detalhes |
 |---|--------|----------|---------|
-| F1.1 | Criar repositorio `exchangeos` | `revenu-platform/exchangeos/` | go.mod (`github.com/revenu-tech/exchangeos`), Go 1.25.1, .gitignore, LICENSE, CLAUDE.md |
+| F1.1 | Criar repositorio `exchangeos` | `revenu-platform/exchangeos/` | go.mod (`github.com/revenutech/exchangeos`), Go 1.25.1, .gitignore, LICENSE, CLAUDE.md |
 | F1.2 | Scaffolding completo | `cmd/`, `modules/`, `pkg/`, `internal/`, `proto/` | Estrutura da secao 3, Makefile com targets build/test/lint/run/proto/migrate |
 | F1.3 | Proto contracts | `proto/exchangeos/v1/` | 9 services: trade, quote, amendment, settlement, refdata, admin, risk, position, compliance. buf.yaml + buf.gen.yaml |
 | F1.4 | Proto contracts compartilhados | `revenu-platform/proto/` | Atualizar buf.yaml com `exchangeos/v1`. Gerar stubs Go consumidos por outros modulos |
@@ -8518,13 +8518,13 @@ pkg/integration/<module>/
 └── README.md                  # Quick reference + RPC catalog + SLA expectations
 
 # Import path obrigatorio:
-import "github.com/revenu-tech/exchangeos/pkg/integration/accountos"
-import accountospb "github.com/revenu-tech/accountos/proto/accountos/v1"
+import "github.com/revenutech/exchangeos/pkg/integration/accountos"
+import accountospb "github.com/revenutech/accountos/proto/accountos/v1"
 ```
 
 **Convencoes:**
 - 1 package per modulo (exclusivo)
-- Proto imports cross-repo via `go.mod` `require github.com/revenu-tech/<module>` ou via `buf` workspace
+- Proto imports cross-repo via `go.mod` `require github.com/revenutech/<module>` ou via `buf` workspace
 - Health check: `client.Health(ctx) → status` periodico (30s); falha 3x consecutivas marca `unhealthy` → impacta ExchangeOS readiness probe
 - Sentinel errors locais: `ErrAccountFrozen`, `ErrCreditLimitExceeded`, `ErrSanctionsHit` (nunca propagar `codes.FailedPrecondition` raw)
 

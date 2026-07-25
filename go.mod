@@ -1,4 +1,4 @@
-module github.com/revenu-tech/exchangeos
+module github.com/revenutech/exchangeos
 
 go 1.26.5
 

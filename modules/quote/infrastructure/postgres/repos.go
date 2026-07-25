@@ -17,8 +17,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 
-	"github.com/revenu-tech/exchangeos/modules/quote/application"
-	"github.com/revenu-tech/exchangeos/modules/quote/domain"
+	"github.com/revenutech/exchangeos/modules/quote/application"
+	"github.com/revenutech/exchangeos/modules/quote/domain"
 )
 
 // ─── QuoteRepo ─────────────────────────────────────────────────────────────
