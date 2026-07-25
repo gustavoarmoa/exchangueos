@@ -33,7 +33,7 @@ type AcceptedQuoteView struct {
 	QuoteCCY    string
 	NotionalCCY string
 	Notional    decimal.Decimal
-	DealRate    decimal.Decimal // mid; alternative wiring may pass the accepted side
+	DealRate    decimal.Decimal // the side-adjusted deal rate (ask on a buy, bid on a sell)
 	Venue       string          // "CLS" | "BILATERAL" | "CFETS" (raw)
 	AcceptedAt  time.Time
 }

@@ -165,25 +165,29 @@ func (c *Container) wireEventHandlers() {
 			if err != nil {
 				return tradeapp.AcceptedQuoteView{}, err
 			}
-			// The Quote aggregate carries no counterparties, no side and no
-			// venue, so a trade cannot be booked from it.
+			// Every field below comes off the aggregate. This adapter used to
+			// substitute literals for the three the Quote did not carry —
+			// BuyerBIC "DEUTDEFF", SellerBIC "CHASUS33", Venue "CLS" — and take
+			// q.Mid() as the deal rate because there was no side to choose
+			// bid-vs-ask with. The Quote now carries counterparties, side and
+			// venue, so nothing is inferred here.
 			//
-			// This used to fill the gap with literals: BuyerBIC "DEUTDEFF",
-			// SellerBIC "CHASUS33", Venue "CLS". Every trade auto-booked from an
-			// accepted quote was therefore stamped with Deutsche Bank and
-			// JPMorgan as counterparties whatever the client actually traded —
-			// and counterparty identity drives SSI resolution, sanctions
-			// screening and the BACEN filing. DealRate took q.Mid() for the same
-			// reason: the quote records no side, so bid-vs-ask could not be
-			// chosen and the spread was given away in both directions.
-			//
-			// Refusing is the safe behaviour: a trade booked against the wrong
-			// counterparty is worse than a trade not booked. Wiring this up is a
-			// feature — the RFQ must capture buyer/seller/side and the Quote must
-			// carry them — not something the adapter can infer.
-			return tradeapp.AcceptedQuoteView{}, fmt.Errorf(
-				"cannot book trade from quote %s: the Quote aggregate carries no counterparty BICs, "+
-					"no side and no venue; auto-booking is disabled until it does", q.ID())
+			// Buyer/seller and the deal rate are derived by the aggregate rather
+			// than assembled here: which party buys the base and whether the
+			// trade prints on the bid or the ask are both consequences of the
+			// side, and that rule belongs in the domain.
+			return tradeapp.AcceptedQuoteView{
+				TenantID:    q.TenantID(),
+				BuyerBIC:    q.BuyerBIC(),
+				SellerBIC:   q.SellerBIC(),
+				BaseCCY:     q.BaseCCY(),
+				QuoteCCY:    q.QuoteCCY(),
+				NotionalCCY: q.NotionalCCY(),
+				Notional:    q.Notional(),
+				DealRate:    q.DealRate(),
+				Venue:       q.Venue(),
+				AcceptedAt:  time.Now().UTC(),
+			}, nil
 		},
 	}
 	c.EventBus.Subscribe("quote.accepted.v1", func(ctx context.Context, e eventbus.Event) error {

@@ -12,6 +12,8 @@ import (
 	"github.com/revenu-tech/exchangeos/internal/container"
 
 	quoteapp "github.com/revenu-tech/exchangeos/modules/quote/application"
+	qdomain "github.com/revenu-tech/exchangeos/modules/quote/domain"
+	tradedom "github.com/revenu-tech/exchangeos/modules/trade/domain"
 )
 
 func newMemCfg() *config.Config {
@@ -53,13 +55,16 @@ func TestContainer_QuoteAccepted_BooksTrade(t *testing.T) {
 	tenant := uuid.New()
 
 	q, err := c.Quote.GetQuote(ctx, quoteapp.GetQuoteRequest{
-		TenantID:    tenant,
-		BaseCCY:     "EUR",
-		QuoteCCY:    "USD",
-		Notional:    decimal.NewFromInt(1_000_000),
-		NotionalCCY: "EUR",
-		Venue:       "INTERNAL",
-		TTL:         5 * time.Minute,
+		TenantID:     tenant,
+		RequesterBIC: "CHASUS33",
+		ProviderBIC:  "DEUTDEFF",
+		Side:         qdomain.SideBuy,
+		BaseCCY:      "EUR",
+		QuoteCCY:     "USD",
+		Notional:     decimal.NewFromInt(1_000_000),
+		NotionalCCY:  "EUR",
+		Venue:        "INTERNAL",
+		TTL:          5 * time.Minute,
 	})
 	if err != nil {
 		t.Fatalf("GetQuote: %v", err)
@@ -72,20 +77,41 @@ func TestContainer_QuoteAccepted_BooksTrade(t *testing.T) {
 		t.Fatalf("AcceptQuote: %v", err)
 	}
 
-	// No trade must be booked. The Quote aggregate carries no counterparty BICs,
-	// no side and no venue, and the handler used to fill those in with literals
-	// ("DEUTDEFF" / "CHASUS33" / "CLS", rate = mid). This assertion previously
-	// expected exactly one trade, which meant it was pinning the fabricated
-	// counterparties as correct behaviour.
-	//
-	// Auto-booking returns here once the RFQ captures buyer/seller/side and the
-	// Quote carries them; at that point this test flips back to asserting the
-	// booked trade AND its counterparties.
+	// The handler books a trade from the accepted quote. Every field comes off
+	// the aggregate — this used to assert only that one trade existed, while the
+	// adapter filled counterparties in with the literals "DEUTDEFF"/"CHASUS33",
+	// so the assertion passed on fabricated data. The counterparty and rate
+	// checks below are what make it meaningful.
 	trades, err := c.Trade.ListTrades(ctx, tenant, "", time.Time{}, time.Time{}, 100)
 	if err != nil {
 		t.Fatalf("ListTrades: %v", err)
 	}
-	if len(trades) != 0 {
-		t.Fatalf("expected no trade to be booked from a quote without counterparties, got %d", len(trades))
+	if len(trades) != 1 {
+		t.Fatalf("expected 1 trade after AcceptQuote, got %d", len(trades))
+	}
+	tr := trades[0]
+	if tr.Status() != tradedom.StatusPending {
+		t.Errorf("status: got %s want PENDING", tr.Status())
+	}
+	if !tr.BoughtAmount().Equal(decimal.NewFromInt(1_000_000)) {
+		t.Errorf("bought_amount: %s", tr.BoughtAmount())
+	}
+	if tr.BoughtCurrency() != "EUR" || tr.SoldCurrency() != "USD" {
+		t.Errorf("pair: %s/%s", tr.BoughtCurrency(), tr.SoldCurrency())
+	}
+	// Side BUY: the requester buys the base, so it is the buyer and the dealer
+	// is the seller.
+	if tr.BuyerBIC() != "CHASUS33" {
+		t.Errorf("buyer: got %s want CHASUS33 (the requester, on a BUY)", tr.BuyerBIC())
+	}
+	if tr.SellerBIC() != "DEUTDEFF" {
+		t.Errorf("seller: got %s want DEUTDEFF (the provider, on a BUY)", tr.SellerBIC())
+	}
+	// A BUY deals on the ask, never the mid.
+	if !tr.DealRate().Equal(q.Ask()) {
+		t.Errorf("deal_rate: got %s want the ask %s (mid was %s)", tr.DealRate(), q.Ask(), q.Mid())
+	}
+	if tr.Venue() != tradedom.VenueBilateral {
+		t.Errorf("venue: got %s — INTERNAL should map to BILATERAL", tr.Venue())
 	}
 }

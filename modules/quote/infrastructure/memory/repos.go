@@ -14,8 +14,8 @@ import (
 // ─── QuoteRepo ─────────────────────────────────────────────────────────────
 
 type QuoteRepo struct {
-	mu    sync.RWMutex
-	byID  map[uuid.UUID]*domain.Quote
+	mu   sync.RWMutex
+	byID map[uuid.UUID]*domain.Quote
 }
 
 func NewQuoteRepo() *QuoteRepo { return &QuoteRepo{byID: make(map[uuid.UUID]*domain.Quote)} }

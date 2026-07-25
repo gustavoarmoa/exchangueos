@@ -40,12 +40,24 @@ func (s *GRPCServer) GetQuote(ctx context.Context, req *pb.GetQuoteRequest) (*pb
 		return nil, status.Errorf(codes.InvalidArgument, "notional.amount: %v", err)
 	}
 
+	// Counterparties, side and venue are required — the domain rejects a quote
+	// without them, because a quote that does not say who is dealing, in which
+	// direction and where cannot be turned into a trade.
+	side, err := domain.ParseSide(req.GetSide())
+	if err != nil {
+		return nil, mapErr(err)
+	}
+
 	q, err := s.svc.GetQuote(ctx, application.GetQuoteRequest{
-		TenantID:    tid,
-		BaseCCY:     req.GetBaseCcy(),
-		QuoteCCY:    req.GetQuoteCcy(),
-		Notional:    notional,
-		NotionalCCY: req.GetNotional().GetCurrency(),
+		TenantID:     tid,
+		RequesterBIC: req.GetRequesterBic(),
+		ProviderBIC:  req.GetProviderBic(),
+		Side:         side,
+		BaseCCY:      req.GetBaseCcy(),
+		QuoteCCY:     req.GetQuoteCcy(),
+		Notional:     notional,
+		NotionalCCY:  req.GetNotional().GetCurrency(),
+		Venue:        req.GetVenue(),
 	})
 	if err != nil {
 		return nil, mapErr(err)
@@ -54,8 +66,9 @@ func (s *GRPCServer) GetQuote(ctx context.Context, req *pb.GetQuoteRequest) (*pb
 }
 
 // AcceptQuote — pb.QuoteServiceServer
-// Returns the quote_id back as the response trade_id. Real trade creation is
-// driven downstream by a worker reacting to the `quote.accepted.v1` event.
+//
+// Trade creation is driven downstream by the quote.accepted.v1 handler, which
+// books from the aggregate's own counterparties, side and venue.
 func (s *GRPCServer) AcceptQuote(ctx context.Context, req *pb.AcceptQuoteRequest) (*pb.AcceptQuoteResponse, error) {
 	if _, err := parseTenant(req.GetTenant()); err != nil {
 		return nil, err
