@@ -1,7 +1,7 @@
 # ExchangeOS — CLAUDE.md (Livro de Regras do Projeto)
 
 > **Modulo:** ExchangeOS — Standalone FX Module (Revenu Platform)
-> **Ports:** `:8094 HTTP / :9094 gRPC`
+> **Ports:** `:8084 HTTP / :9084 gRPC`
 > **Stack:** Go 1.25 + CockroachDB + Kafka + Flink + GCP + ISO 20022 + IdentityOS/KeycloakOS
 
 ## Modular Memory Imports

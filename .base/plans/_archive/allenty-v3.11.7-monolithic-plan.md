@@ -341,7 +341,7 @@ ExchangeOS e o **modulo canonico de Foreign Exchange** da Revenu Platform — re
 │                          FX TRADE LIFECYCLE PIPELINE                         │
 │                                                                              │
 │  Cliente/Trader → [ExchangeOS] → Quote → Trade → Confirm → Settle → Report   │
-│                    :8094 / :9094                                             │
+│                    :8084 / :9084                                             │
 │                       │                                                      │
 │                       ├── fxtr  (FX Trade)         ──► trade booking         │
 │                       ├── fxti  (FX Trade Init)    ──► RFQ / quote           │
@@ -378,7 +378,7 @@ ExchangeOS e o **modulo canonico de Foreign Exchange** da Revenu Platform — re
 
 ### 2.1 ExchangeOS — Foreign Exchange Trading & Settlement
 
-**Tier:** 3 (External) | **HTTP:** :8094 | **gRPC:** :9094 | **Repo:** `exchangeos`
+**Tier:** 3 (External) | **HTTP:** :8084 | **gRPC:** :9084 | **Repo:** `exchangeos`
 
 #### Bounded Contexts
 
@@ -1096,7 +1096,7 @@ Posicao 10-12: Detalhamento por anexo (codigo do produto, motivo, etc.)
 ```
 revenu-platform/exchangeos/
 ├── cmd/
-│   ├── api/main.go                    # HTTP (:8094) + gRPC (:9094) entrypoint
+│   ├── api/main.go                    # HTTP (:8084) + gRPC (:9084) entrypoint
 │   ├── migrator/main.go               # CockroachDB migrations
 │   ├── worker/main.go                 # Async event processor (settlement, reconciliation)
 │   ├── mq-bridge/main.go              # IBM MQ <-> internal Kafka bridge (SWIFT FIN)
@@ -1946,7 +1946,7 @@ revenu-platform/exchangeos/
 | F14.2 | Dockerfile.dev | `Dockerfile.dev` | Hot-reload com Air |
 | F14.3 | Helm chart | `k8s/helm/exchangeos/` | Deployment (api, worker, mq-bridge, eod), Service, SA, HPA, PDB, ConfigMap, Secret (Vault). Liveness/readiness probes |
 | F14.4 | Kustomize overlays | `k8s/kustomize/` | base/, overlays/dev/, overlays/staging/, overlays/production/ |
-| F14.5 | Network policies | `k8s/policies/` | Ingress: KrakenD + cluster-internal :8094/:9094. Egress: CockroachDB, Kafka, IBM MQ, Vault, LedgerOS, AuthorityOS, ComplOS, RiskOS, internet (CLS, Refinitiv, BACEN) |
+| F14.5 | Network policies | `k8s/policies/` | Ingress: KrakenD + cluster-internal :8084/:9084. Egress: CockroachDB, Kafka, IBM MQ, Vault, LedgerOS, AuthorityOS, ComplOS, RiskOS, internet (CLS, Refinitiv, BACEN) |
 | F14.6 | Vault policy | `vault/policies/exchangeos-policy.hcl` | KVv2 read/write para SSI, MQ creds, counterparty API keys, CLS certs |
 | F14.7 | Observability | `internal/telemetry/` | OTel tracing (Tempo), Prometheus metrics (quote_latency, trade_booking_latency, settlement_latency, nostro_breaks, nop_value, credit_utilization), slog structured logs |
 | F14.8 | Grafana dashboards | `docker/grafana/` | ExchangeOS dashboard: trade volume, settlement success rate, NOP, P&L, latencies, MQ throughput, nostro breaks |
@@ -1970,7 +1970,7 @@ revenu-platform/exchangeos/
 | F15.4 | ADR: ExchangeOS Architecture | `.base/plans/00-governance/decision-records/ADR-011-exchangeos-architecture.md` | Standalone vs embedded, multi-currency dual-ledger, CLS strategy, SWIFT FIN vs MX |
 | F15.5 | ADR: PVP Strategy | `.base/plans/00-governance/decision-records/ADR-012-pvp-strategy.md` | CLS first para CCYs elegiveis, fallback gross com Herstatt threshold |
 | F15.6 | ADR: ISO 20022 FX Coverage | `.base/plans/00-governance/decision-records/ADR-013-iso20022-fx-coverage.md` | Decisao de cobrir fxtr+fxti+fxmt+admi+camt+reda, decomposicao trea → fxti/fxmt |
-| F15.7 | Platform Topology update | `revenu-platform-topology.md` | Adicionar ExchangeOS (Tier 3, :8094, BCs, integrations) |
+| F15.7 | Platform Topology update | `revenu-platform-topology.md` | Adicionar ExchangeOS (Tier 3, :8084, BCs, integrations) |
 | F15.8 | RP-* Pattern Catalog update | `118-revenu-platform-patterns.md` | Adicionar RP-MOD-005 (ExchangeOS) |
 | F15.9 | Communication Matrix | `revenu-platform-topology.md` | Matrix atualizada: ExchangeOS ↔ LedgerOS/PaymentOS/AccountOS/AuthorityOS/ComplOS/RiskOS/TreasuryOS/IdentityOS |
 | F15.10 | Integration Flows | `.base/flows/exchangeos/` | Mermaid: RFQ, trade booking, PVP settlement, nostro recon, EOD MTM, DEC registration |
@@ -3734,7 +3734,7 @@ Cada test file segue o template §17.6 (Create happy + duplicates + validation +
 |-----------|---------|
 | [Allenty v3.8.0](allenty-v3.8.0-onboardos-accountos-plan.md) | Pattern de referencia (estrutura, fases) |
 | [ISO 20022 Full Coverage Plan](03-ontology/iso20022-full-coverage-plan.md) | Fase 3 — FX & Bank Loan: ExchangeOS realiza esta fase |
-| [Platform Topology](01-architecture/revenu-platform-topology.md) | ExchangeOS (Tier 3, :8094) |
+| [Platform Topology](01-architecture/revenu-platform-topology.md) | ExchangeOS (Tier 3, :8084) |
 | [ADR Dual-Ledger](00-governance/decision-records/ADR-014-dual-ledger-strategy.md) | ExchangeOS usa LedgerGateway estendido (multi-CCY) |
 | [ADR Microservice Architecture](00-governance/decision-records/ADR-001-microservice-architecture.md) | Padrao de modulo canonico |
 | [PaymentOS](../../../paymentos/) | Modelo para IBM MQ + Kafka messaging |
@@ -4498,7 +4498,7 @@ Cada test file segue o template §17.6 (Create happy + duplicates + validation +
 
 ## 9. Open Questions (para o OK)
 
-1. **Allocation de port:** Confirmar `:8094 HTTP / :9094 gRPC` (proxima na sequencia OnboardOS :8092, AccountOS :8093).
+1. **Allocation de port:** Confirmar `:8084 HTTP / :9084 gRPC` (proxima na sequencia OnboardOS :8092, AccountOS :8093).
 2. **TreasuryOS FX migration:** Migrar o codigo de `treasuryos/modules/fx/` (FXRate aggregate, etc.) para `exchangeos` na F15 ou manter coexistencia inicial?
 3. **Escopo MVP:** O Sprint 1-5 (MS-023a → MS-023d) ja entregam MVP funcional. Confirmar: MVP inclui ambas as organisations (CLS + CFETS) ou apenas CLS primeiro com CFETS em v2?
 3b. **Confirmar remocao definitiva de fxti/fxmt do plano:** Revisao 3.9.2 removeu por completo o framing "fxti/fxmt como ISO 20022" — confirmar que esta correto. Quote/Amendment vivem como gRPC interno (`proto/exchangeos/v1/quote.proto` + `amendment.proto`) que traduz para fxtr.014/015/016 (CLS) ou fxtr.031/035/036 (CFETS) na fronteira.
@@ -7219,7 +7219,7 @@ RFLW.<DOMAIN>.<FAMILY>.<VERSION>
 ## Actors / Participants
 
 - **Client** — External API consumer (trader, RFQ system, counterparty)
-- **API** — Gin HTTP server on `:8094` ou gRPC `:9094`
+- **API** — Gin HTTP server on `:8084` ou gRPC `:9084`
 - **CMD** — `<CommandHandler>`
 - **Domain** — `<Aggregate>` (e.g., FXTrade, CLSSubmission)
 - **PRICING** — `pkg/pricing/` engine
@@ -7473,7 +7473,7 @@ flowchart TD
         ▼                                      ▼                                      ▼
 ┌──────────────────┐              ┌──────────────────────┐              ┌──────────────────────┐
 │   IDENTITYOS        │              │   EXCHANGEOS         │              │   AUTHORITYOS        │
-│   :9084 gRPC     │              │   :9094 gRPC         │              │   ...                │
+│   :9084 gRPC     │              │   :9084 gRPC         │              │   ...                │
 │                  │              │                      │              │                      │
 │ Identity Mgmt    │◄──gRPC───────│  AuthZ Policy Check  │              │                      │
 │ Session Mgmt     │              │  per RPC + endpoint  │              │                      │
@@ -8226,7 +8226,7 @@ tasks:
     cmds:
       - docker compose -f docker-compose.deps.yml up -d
       - docker compose -f docker-compose.local.yml up -d
-      - echo "✅ ExchangeOS local stack up at http://localhost:8094"
+      - echo "✅ ExchangeOS local stack up at http://localhost:8084"
 ```
 
 ### 21.3 Makefile (Backward Compat — delega para task)
@@ -9223,8 +9223,8 @@ func TestE2E_001_FullSagaCLSLifecycle(t *testing.T) {
     ctx := context.Background()
 
     // Assume make local-up rodou. Conecta via API REST + verifica state.
-    apiClient := newAPIClient(t, "http://localhost:8094")
-    grpcClient := newGRPCClient(t, "localhost:9094")
+    apiClient := newAPIClient(t, "http://localhost:8084")
+    grpcClient := newGRPCClient(t, "localhost:9084")
 
     // 1. Request quote
     quoteResp, err := apiClient.RequestQuote(ctx, &QuoteRequest{
@@ -9823,7 +9823,7 @@ local-up:  ## Bring up full local stack (crdb + kafka + vault + keycloak + app)
 	$(MAKE) crdb-migrate
 	docker compose -f docker-compose.deps.yml up -d
 	docker compose -f docker-compose.local.yml up -d
-	@echo "✅ ExchangeOS local stack up at http://localhost:8094 (HTTP) and :9094 (gRPC)"
+	@echo "✅ ExchangeOS local stack up at http://localhost:8084 (HTTP) and :9084 (gRPC)"
 
 .PHONY: local-down
 local-down:  ## Tear down full local stack

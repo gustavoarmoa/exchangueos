@@ -57,10 +57,10 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		Env: getEnv("EXCHANGEOS_ENV", "dev"),
 		HTTP: HTTPConfig{
-			Port: getEnvInt("EXCHANGEOS_HTTP_PORT", 8094),
+			Port: getEnvInt("EXCHANGEOS_HTTP_PORT", 8084),
 		},
 		GRPC: GRPCConfig{
-			Port:         getEnvInt("EXCHANGEOS_GRPC_PORT", 9094),
+			Port:         getEnvInt("EXCHANGEOS_GRPC_PORT", 9084),
 			MaxRecvBytes: getEnvInt("EXCHANGEOS_GRPC_MAX_RECV", 16<<20), // 16 MiB
 			MaxSendBytes: getEnvInt("EXCHANGEOS_GRPC_MAX_SEND", 16<<20),
 			Reflection:   getEnvBool("EXCHANGEOS_GRPC_REFLECTION", true),

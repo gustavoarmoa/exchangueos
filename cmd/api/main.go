@@ -1,4 +1,4 @@
-// Package main — exchangeos-api: dual HTTP (:8094) + gRPC (:9094) server.
+// Package main — exchangeos-api: dual HTTP (:8084) + gRPC (:9084) server.
 //
 // Bootstraps: config → telemetry → DB pool → gRPC server → HTTP server → graceful shutdown.
 // Health endpoints: /healthz (liveness) + /readyz (readiness) + gRPC HealthService.

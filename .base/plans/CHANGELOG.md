@@ -75,16 +75,16 @@ All seeds FK-respecting + idempotent (`ON CONFLICT DO NOTHING`).
 
 ```bash
 # Catalogue
-curl -s http://localhost:8094/v1/admin/_schemas | jq
+curl -s http://localhost:8084/v1/admin/_schemas | jq
 
 # LIST trades, filtered
-curl 'http://localhost:8094/v1/admin/fx-trades?status=CONFIRMED&limit=10'
+curl 'http://localhost:8084/v1/admin/fx-trades?status=CONFIRMED&limit=10'
 
 # Full lifecycle
-curl -X POST -H 'Content-Type: application/json' -d '{"code":"XTS","name":"Test","minor_units":2,"cls_eligible":false,"cfets_eligible":false,"active":true}' http://localhost:8094/v1/admin/currencies
-curl http://localhost:8094/v1/admin/currencies/XTS
-curl -X PUT -H 'Content-Type: application/json' -d '{"active":false}' http://localhost:8094/v1/admin/currencies/XTS
-curl -X DELETE http://localhost:8094/v1/admin/currencies/XTS
+curl -X POST -H 'Content-Type: application/json' -d '{"code":"XTS","name":"Test","minor_units":2,"cls_eligible":false,"cfets_eligible":false,"active":true}' http://localhost:8084/v1/admin/currencies
+curl http://localhost:8084/v1/admin/currencies/XTS
+curl -X PUT -H 'Content-Type: application/json' -d '{"active":false}' http://localhost:8084/v1/admin/currencies/XTS
+curl -X DELETE http://localhost:8084/v1/admin/currencies/XTS
 
 # Smoke
 bash scripts/smoke-crud.sh
@@ -1235,7 +1235,7 @@ Closes 2 of 4 MS-023a gaps acknowledged in 4.2.0.
 **Docker / compose:**
 - `docker/api/Dockerfile` — distroless multi-stage multi-arch (linux/amd64+arm64), nonroot user, BuildKit cache mounts, target < 50 MB
 - `docker/_template/Dockerfile.template` — reusable spec for the other 6 binaries
-- `docker/compose/docker-compose.yml` — local stack (CRDB :26257 single-node, Redpanda Kafka :9092, OTel Collector :4317, exchangeos-api :8094/:9094) with healthchecks + db init job
+- `docker/compose/docker-compose.yml` — local stack (CRDB :26257 single-node, Redpanda Kafka :9092, OTel Collector :4317, exchangeos-api :8084/:9084) with healthchecks + db init job
 - `docker/otel-collector/config.yaml` — OTLP receiver + batch processor + debug exporter (Tempo/Mimir hooks commented for prod)
 - `.dockerignore` excluding `.git/.claude/.base/secrets/.env`
 
