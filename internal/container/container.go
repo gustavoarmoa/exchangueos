@@ -82,21 +82,21 @@ type Container struct {
 	Config *config.Config
 	Pool   *pgxpool.Pool // non-nil when Backend == "postgres"
 
-	RefData    *refapp.Service
-	Quote      *quoteapp.Service
-	Trade      *tradeapp.Service
-	Settlement *clsapp.Service
-	PayIn      *payapp.Service
-	NetReport  *netapp.Service
-	Risk       *riskapp.Service
-	Position   *posapp.Service
-	Compliance       *complapp.Service
-	Admin            *adminapp.Service
-	CFETSCapture     *cfcapapp.Service
+	RefData           *refapp.Service
+	Quote             *quoteapp.Service
+	Trade             *tradeapp.Service
+	Settlement        *clsapp.Service
+	PayIn             *payapp.Service
+	NetReport         *netapp.Service
+	Risk              *riskapp.Service
+	Position          *posapp.Service
+	Compliance        *complapp.Service
+	Admin             *adminapp.Service
+	CFETSCapture      *cfcapapp.Service
 	CFETSConfirmation *cfconapp.Service
-	Pricing          quoteapp.PricingEngine
-	SpotBook   *refdomain.SpotRateBook // exposed so worker feeders can publish rates
-	EventBus   *eventbus.Bus           // in-process pub/sub (temporary; Kafka outbox in MS-023g)
+	Pricing           quoteapp.PricingEngine
+	SpotBook          *refdomain.SpotRateBook // exposed so worker feeders can publish rates
+	EventBus          *eventbus.Bus           // in-process pub/sub (temporary; Kafka outbox in MS-023g)
 
 	// Memory-only handles kept for tests/bootstrap convenience (nil if backend != memory).
 	MemRefDataCurrencies *refmem.CurrencyRepo
@@ -167,8 +167,8 @@ func (c *Container) wireEventHandlers() {
 			}
 			return tradeapp.AcceptedQuoteView{
 				TenantID:    q.TenantID(),
-				BuyerBIC:    "DEUTDEFF",  // TODO: carry counterparty BICs on the Quote aggregate
-				SellerBIC:   "CHASUS33",  // (placeholder; safe for dev)
+				BuyerBIC:    "DEUTDEFF", // TODO: carry counterparty BICs on the Quote aggregate
+				SellerBIC:   "CHASUS33", // (placeholder; safe for dev)
 				BaseCCY:     q.BaseCCY(),
 				QuoteCCY:    q.QuoteCCY(),
 				NotionalCCY: q.NotionalCCY(),
@@ -270,6 +270,9 @@ func (c *Container) wireComplianceAdmin() {
 		complmem.NewIOFRepo(),
 		complmem.NewReportRepo(),
 		complmem.NewScreeningRepo(),
+		// Fail-closed até que um provedor real de listas (OFAC/UN/EU/COAF)
+		// seja ligado: screening errors out em vez de liberar a contraparte.
+		complapp.UnavailableScreener{},
 	)
 	c.Admin = adminapp.NewService(adminmem.NewEventRepo(), adminmem.NewEODJobRepo())
 
@@ -330,6 +333,9 @@ func (c *Container) wireComplianceAdminPostgres(pool *pgxpool.Pool) {
 		complpg.NewIOFRepo(pool),
 		complpg.NewReportRepo(pool),
 		complpg.NewScreeningRepo(pool),
+		// Fail-closed até que um provedor real de listas (OFAC/UN/EU/COAF)
+		// seja ligado: screening errors out em vez de liberar a contraparte.
+		complapp.UnavailableScreener{},
 	)
 	c.Admin = adminapp.NewService(adminpg.NewEventRepo(pool), adminpg.NewEODJobRepo(pool))
 
